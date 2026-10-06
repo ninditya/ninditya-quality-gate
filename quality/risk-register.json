@@ -309,10 +309,11 @@
       "acs": [
         "AC-ASM-02"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "No screen calls delete today.",
-      "evidence": "api/spec/requests/write_honesty_spec.rb"
+      "evidence": "api/spec/requests/write_honesty_spec.rb",
+      "fix": "DELETE answers 409 with the model's reason when nothing was deleted."
     },
     {
       "id": "R-22",

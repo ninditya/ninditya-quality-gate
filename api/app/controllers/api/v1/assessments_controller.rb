@@ -53,8 +53,13 @@ module Api
 
       # DELETE /api/v1/assessments/:id
       def destroy
-        @assessment.destroy
-        json_response({ message: "Assessment deleted" })
+        # destroy returns false when the model refuses (an assessment with
+        # sessions is kept). The answer has to say so.
+        if @assessment.destroy
+          json_response({ message: "Assessment deleted" })
+        else
+          json_error(@assessment.errors.full_messages.first || "Assessment could not be deleted", :conflict)
+        end
       end
 
       private
