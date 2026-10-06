@@ -1,0 +1,5 @@
+# API suite — at v1.0.1, after three more fixes
+# docker compose -f docker-compose.test.yml run --rm api-test
+
+71 examples, 0 failures
+

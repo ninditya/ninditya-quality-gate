@@ -13,8 +13,8 @@ Two halves, one status.
     ▼
  pull request ──► quality-net  (one status; nothing merges around it)
                    ├─ Definition of Ready   spec + criteria + design plan + tests
-                   ├─ API suite             58 checks: data, tenancy, lifecycle, contracts
-                   ├─ Web suite             19 checks, type-check, production build
+                   ├─ API suite             71 checks: data, tenancy, lifecycle, contracts
+                   ├─ Web suite             23 checks, type-check, production build
                    └─ Gates                 traceability both ways, confidentiality
 
  tag vX.Y.Z ───► release-gate  the same net at the tag
@@ -107,13 +107,18 @@ this paragraph.
   the tagged check, states its plan and rollback, and marks the risk fixed in
   the register. Green, merged.
 
+Since the ruleset went on, every change has come through the gate:
+[#3](https://github.com/ninditya/ninditya-quality-gate/pull/3) changed documents only and was asked for no inputs;
+[#4](https://github.com/ninditya/ninditya-quality-gate/pull/4), [#5](https://github.com/ninditya/ninditya-quality-gate/pull/5) and [#6](https://github.com/ninditya/ninditya-quality-gate/pull/6) changed runtime code
+and each carries its spec, criteria, design plan and tagged tests.
+
 The gates have their own tests (`quality/gate/gate.test.mjs`, 23 of them).
 Each rule is shown blocking what it exists to block and letting a well-formed
 change through. A gate nobody tests is a gate nobody should trust.
 
 ## Half two: the test net
 
-77 checks. Each one is there because of a risk in the audit; none is there for
+94 checks. Each one is there because of a risk in the audit; none is there for
 a coverage number.
 
 | Check | Protects against | Deliberately does not cover |
@@ -121,14 +126,17 @@ a coverage number.
 | `api/spec/boot_spec.rb` | Code that loads on a laptop and crashes production at boot | Missing environment variables, infrastructure |
 | `api/spec/requests/tenant_isolation_spec.rb` | One tenant reading or changing another's results | Tenancy in workers and sockets (R-14) |
 | `api/spec/tenant_scoping_guard_spec.rb` | The *next* unscoped lookup: it reads the controllers and fails on any bare lookup of a table with no tenant column | Code outside controllers |
-| `api/spec/services/portfolio_generator_spec.rb` | Model output becoming stored ratings unchecked: invented levels, dropped skills, trusted confidence, half-written regenerations | Whether the model's ratings are *good* (R-12) |
+| `api/spec/services/portfolio_generator_spec.rb` | Model output becoming stored ratings unchecked: invented levels, dropped skills, trusted confidence, quotes the candidate never said, half-written regenerations | Whether the model's ratings are *good* (R-12) |
 | `api/spec/requests/fit_gap_spec.rb` | Wrong or stale comparisons reaching a hiring decision | The quality of the narrative text |
 | `api/spec/requests/session_lifecycle_spec.rb` | Sessions ended by the wrong party or stored with the wrong reason | — |
 | `api/spec/channels/audio_websocket_*` | An interview killed by a reconnect or by a polite phrase | Audio, and the real model connection (R-12) |
 | `api/spec/channels/coverage_websocket_auth_spec.rb` | Someone who is not an assessor watching a live interview | — |
+| `api/spec/channels/audio_websocket_transcript_spec.rb` | A turn of the interview lost without a trace, by a failed write or by two connections using one number | A lost final turn when the database is down for every write |
+| `api/spec/workers/coverage_analyzer_worker_spec.rb` | A skill marked covered that the analyzer never judged covered | Whether the analyzer's own judgement is good (R-12) |
 | `api/spec/requests/write_honesty_spec.rb` | A success response for a write that did not happen | — |
 | `contracts/*.json`, `contract_spec.rb`, web component tests | The web and the API drifting apart on a field name or type | Responses with no fixture yet. Four have one so far: the ones the result and candidate pages read |
 | `web/src/pages/interview/*.test.tsx`, `hooks/useAudioWebSocket.test.ts` | Telling a candidate that a failed interview is complete | Microphone capture and playback |
+| `web/src/pages/portfolio/PortfolioPage.test.tsx` | Ratings from an incomplete transcript shown with no warning | — |
 | `web/src/components/assessment/LevelRadio.test.tsx` | A level saved against the wrong skill | — |
 | `quality/gate/traceability.mjs` | A requirement nobody tests; a test nobody asked for; a silent "we skipped that" | — |
 | `quality/gate/confidentiality.mjs` | The company or a client being named in a public repository | Images and binaries |
@@ -187,10 +195,15 @@ id, regenerate the matrix. To record a risk you are not fixing: add it to
 [01-red-web.txt](evidence/01-red-web.txt): API 27 of 40 failing, web 10 of 16
 failing plus a type error.
 
-**After.** [evidence/02-green-api.txt](evidence/02-green-api.txt),
+**After, at v1.0.0.** [evidence/02-green-api.txt](evidence/02-green-api.txt),
 [02-green-web.txt](evidence/02-green-web.txt),
 [02-green-gates.txt](evidence/02-green-gates.txt): API 58 of 58, web 19 of
 19, type-check clean, gates 23 of 23.
+
+**After, at v1.0.1.** [evidence/03-v1.0.1-api.txt](evidence/03-v1.0.1-api.txt),
+[03-v1.0.1-web.txt](evidence/03-v1.0.1-web.txt),
+[03-v1.0.1-gates.txt](evidence/03-v1.0.1-gates.txt): API 71 of 71, web 23 of
+23, type-check clean, gates 23 of 23.
 
 **In between,** one commit per risk. Each commit message states the root
 cause, the fix, and which check went from red to green. Each commit was pushed
@@ -217,13 +230,16 @@ the `quality-net` runs on `main` are red for fifteen commits in a row, from
 | R-25 | P2 | `api.test` | Every 401 reloaded the login page, including a wrong password. The login request is exempt | `ee1b48f` |
 | R-31, R-27 | P3, P2 | gate self-test `AC-OPS-03` | Scripts committed without the executable bit; the web's default API port was not the API's | `73fc9df` |
 | R-15 | P2 | `coverage_websocket_auth_spec` | The live coverage socket checked who the caller was and never their role. It now uses the role list the HTTP API uses | pull request #2 |
+| R-13 | P1 | `portfolio_generator_spec` (evidence quotes), `SkillPortfolioCard.test` | The model's "quotes" were stored as evidence unchecked. Each is now looked for in the candidate's turns; what is not found is kept apart and labelled | pull request #4 |
+| R-35 | P1 | `audio_websocket_transcript_spec`, `PortfolioPage.test` | A failed transcript write was logged and dropped, and a turn-number collision was skipped as a duplicate. Writes are retried, a collision keeps both turns, and a turn that is still lost marks the session; the result pages say so | pull request #5 |
+| R-34 | P1 | `coverage_analyzer_worker_spec` | A skill was promoted to "covered" on probe count once it left the analyzer's view. Only the analyzer's judgement makes a skill covered now | pull request #6 |
 
 `ee1b48f` is the first commit at which the whole net is green.
 
 ### No check was made green by weakening it
 
-Since the net was introduced, 317 lines were added to checks and **four were
-removed**. No test file was deleted and nothing is skipped. The four lines:
+Since the net was introduced, 553 lines were added to checks and **five were
+removed**. No test file was deleted and nothing is skipped. The five lines:
 
 - In `fit_gap_spec.rb`, three lines of setup for `AC-FG-02` that inserted the
   unrated row with `save!(validate: false)`, and only when the column happened
@@ -232,6 +248,8 @@ removed**. No test file was deleted and nothing is skipped. The four lines:
 - In `InterviewPage.test.tsx`, a stub of the hardware check that rendered
   static text. Replaced by one with a start button, so that new tests can
   begin an interview (commit `2fd1c45`).
+- In `SkillPortfolioCard.test.tsx`, an import line, replaced by the same line
+  importing one more helper (pull request #4).
 
 To verify:
 
@@ -259,6 +277,14 @@ Kept because the corrections say more about the method than the successes do.
   while reading my own diff; recorded as R-38 rather than folded in quietly.
 - **A commit message claimed more than the ticket said.** I checked it against
   the ticket and corrected the message before publishing.
+- **I under-rated three risks, and released with them rated wrongly.** The
+  brief's scale says any data-integrity issue is at least P1. I had three such
+  risks at P2 because I had only read them in the code and never seen them
+  happen. The release gate could not block on them: it reads the severity I
+  wrote. I found it by checking my own audit against the brief line by line
+  after v1.0.0, re-rated them, fixed them through pull requests #4 to #6, and
+  cut v1.0.1. It is the clearest case in this work of a gate being only as
+  good as the judgement fed into it.
 
 I used an AI assistant throughout: to read the code, and to draft checks,
 fixes and these documents. Each of the corrections above is a place where a
