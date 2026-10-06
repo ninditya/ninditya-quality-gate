@@ -1,0 +1,513 @@
+{
+  "_comment": "Machine-readable twin of assessment/01-audit.md. The release gate blocks on any open P0/P1 here. status: open | fixed | accepted. An accepted risk needs owner, mitigation, accepted_by and expires (YYYY-MM-DD).",
+  "risks": [
+    {
+      "id": "R-01",
+      "severity": "P0",
+      "class": "built-wrong",
+      "title": "The API cannot boot the way production boots it",
+      "impact": "Everyone: the service crash-loops on deploy; nothing works.",
+      "acs": [
+        "AC-OPS-01"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None until fixed. Development and test never eager-load, so nobody saw it.",
+      "evidence": "api/spec/boot_spec.rb"
+    },
+    {
+      "id": "R-02",
+      "severity": "P0",
+      "class": "built-wrong",
+      "title": "The invite link sent to candidates points at the API host",
+      "impact": "Candidates: the link opens a server error page, so no interview can start from an invite.",
+      "acs": [
+        "AC-INV-01"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "A developer can hand-edit the host in each link. An assessor cannot know to.",
+      "evidence": "api/spec/requests/session_lifecycle_spec.rb"
+    },
+    {
+      "id": "R-03",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Any tenant can read, export and overwrite another tenant's candidate results by id",
+      "impact": "Client tenants and candidates: ratings and evidence leak across companies and can be changed by a stranger.",
+      "acs": [
+        "AC-SEC-01",
+        "AC-SEC-02",
+        "AC-SEC-04"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None. Ids are sequential integers.",
+      "evidence": "api/spec/requests/tenant_isolation_spec.rb"
+    },
+    {
+      "id": "R-04",
+      "severity": "P1",
+      "class": "missing-spec",
+      "title": "A login is not tied to any organization; the caller picks the tenant with a header",
+      "impact": "Client tenants: any assessor account can obtain a valid token for any other company.",
+      "acs": [
+        "AC-SEC-03"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None. The users table has no organization.",
+      "evidence": "api/spec/requests/tenant_isolation_spec.rb"
+    },
+    {
+      "id": "R-05",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Skills that were never assessed are stored and shown as real ratings (usually L1)",
+      "impact": "Candidates and hiring managers: a fabricated low rating reads as a measured gap and drives the fit/gap result.",
+      "acs": [
+        "AC-PF-01",
+        "AC-PF-02",
+        "AC-PF-05",
+        "AC-FG-02"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None. The schema cannot represent 'not assessed', so the code invents a level.",
+      "evidence": "api/spec/services/portfolio_generator_spec.rb"
+    },
+    {
+      "id": "R-06",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Confidence is whatever the model says, not the rule the PRD defines",
+      "impact": "Hiring managers: a rating can show HIGH confidence for a skill probed once.",
+      "acs": [
+        "AC-PF-03"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None.",
+      "evidence": "api/spec/services/portfolio_generator_spec.rb"
+    },
+    {
+      "id": "R-07",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Any dropped connection silently ends the interview two minutes later, even after the candidate rejoined",
+      "impact": "Candidates: the interview keeps running on screen while the stored session is already ended as failed and rated from a truncated transcript.",
+      "acs": [
+        "AC-SES-03"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None. A network blip or page refresh is enough.",
+      "evidence": "api/spec/channels/audio_websocket_grace_period_spec.rb"
+    },
+    {
+      "id": "R-08",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Anyone holding an invite link can end the session, and it is recorded as 'all skills covered'",
+      "impact": "Assessors: a never-started interview shows as completed; a cut-short interview is stored as fully covered.",
+      "acs": [
+        "AC-SES-01",
+        "AC-SES-02"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None.",
+      "evidence": "api/spec/requests/session_lifecycle_spec.rb"
+    },
+    {
+      "id": "R-09",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Removing a skill in the assessment or vacancy edit form does not remove it",
+      "impact": "Assessors: the screen shows the skill gone; the AI still interviews on it and the fit/gap still requires it.",
+      "acs": [
+        "AC-ASM-01",
+        "AC-VAC-01"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None from the UI.",
+      "evidence": "api/spec/requests/write_honesty_spec.rb; web/src/pages/vacancies/VacancyEditPage.test.tsx"
+    },
+    {
+      "id": "R-10",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Clicking a level label on one skill changes a different skill's level",
+      "impact": "Assessors: required levels are saved against the wrong skill, so fit/gap results are computed against wrong requirements.",
+      "acs": [
+        "AC-VAC-02"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Clicking the radio circle instead of its label works.",
+      "evidence": "web/src/components/assessment/LevelRadio.test.tsx"
+    },
+    {
+      "id": "R-11",
+      "severity": "P1",
+      "class": "missing-spec",
+      "title": "A fit/gap report is served unchanged after the vacancy's requirements change",
+      "impact": "Hiring managers: a decision is read from a report computed against requirements that no longer exist.",
+      "acs": [
+        "AC-FG-04"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Press Regenerate, if you know the vacancy changed.",
+      "evidence": "api/spec/requests/fit_gap_spec.rb"
+    },
+    {
+      "id": "R-12",
+      "severity": "P1",
+      "class": "missing-input",
+      "title": "No evidence that a live AI interview works on this build: PRD-01 section 7 says engineers must test the failure modes, and nothing does",
+      "impact": "Everyone: the product's main function is unverified end to end; defects in that path are found by reading, not by running.",
+      "acs": [
+        "AC-AI-01"
+      ],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "Run the scripted interview in assessment/uat-live-interview.md against staging with model credentials and attach the transcript.",
+      "evidence": "No test, recording or eval exists in the repo, the tracker or the wiki."
+    },
+    {
+      "id": "R-13",
+      "severity": "P2",
+      "class": "missing-spec",
+      "title": "Evidence quotes are not checked against the transcript",
+      "impact": "Hiring managers: a quote the model invented would be shown as 'Evidence from interview'.",
+      "acs": [
+        "AC-PF-07"
+      ],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "The transcript is one click away for cross-checking. Measure the invention rate during the R-12 run before choosing a rule.",
+      "evidence": "By reading api/app/services/portfolios/generator.rb; not observed, no model access."
+    },
+    {
+      "id": "R-14",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "Tenant scoping fails open: with no tenant resolved, queries return every tenant's rows",
+      "impact": "Client tenants: the next endpoint or job that forgets the tenant leaks everything instead of nothing.",
+      "acs": [
+        "AC-SEC-05"
+      ],
+      "status": "open",
+      "owner": "Tech lead (to be named at G3 sign-off)",
+      "mitigation": "Every authenticated request requires a resolved tenant today, and AC-SEC-04 guards the tenant-less tables. Workers and sockets rely on the open default, so closing it is a planned refactor.",
+      "evidence": "By reading api/app/models/concerns/tenant_scoped.rb."
+    },
+    {
+      "id": "R-15",
+      "severity": "P2",
+      "class": "missing-spec",
+      "title": "The live coverage socket accepts any validly signed token, whatever its role",
+      "impact": "Client tenants: a non-assessor account of the same tenant can watch a live interview's coverage.",
+      "acs": [
+        "AC-SEC-06"
+      ],
+      "status": "open",
+      "owner": "Tech lead (to be named at G3 sign-off)",
+      "mitigation": "Limited to the caller's own tenant.",
+      "evidence": "By reading api/app/channels/coverage_websocket_middleware.rb."
+    },
+    {
+      "id": "R-16",
+      "severity": "P2",
+      "class": "missing-spec",
+      "title": "Editing an assessment after interviews were held rewrites what they were held against",
+      "impact": "Assessors: the definition a past result was judged against is no longer recoverable.",
+      "acs": [
+        "AC-ASM-03"
+      ],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "Stored ratings do not change. Avoid editing an assessment that has sessions; duplicate it instead.",
+      "evidence": "By reading; no document defines edit semantics once sessions exist."
+    },
+    {
+      "id": "R-17",
+      "severity": "P2",
+      "class": "missing-spec",
+      "title": "Invite links never expire and work for anyone who has them",
+      "impact": "Candidates and assessors: a forwarded or leaked link lets someone else take or disturb the interview.",
+      "acs": [
+        "AC-INV-02"
+      ],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "Tokens are 256-bit random; ended sessions refuse new connections.",
+      "evidence": "By reading api/app/models/session.rb."
+    },
+    {
+      "id": "R-18",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "The time limit is only enforced when someone speaks",
+      "impact": "Operations: a silent, connected session is never ended by the server.",
+      "acs": [
+        "AC-SES-04"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "The browser ends the interview when its own timer expires.",
+      "evidence": "By reading api/app/channels/audio_websocket_middleware.rb (check_time_ceiling)."
+    },
+    {
+      "id": "R-19",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "A candidate is told 'Interview Complete, recorded' when the link is invalid, the page failed to load, or the connection was lost",
+      "impact": "Candidates: they believe they finished an interview that never happened or failed, and do not retry or ask.",
+      "acs": [
+        "AC-INT-01",
+        "AC-INT-02"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None.",
+      "evidence": "web/src/pages/interview/InterviewPage.test.tsx; web/src/hooks/useAudioWebSocket.test.ts"
+    },
+    {
+      "id": "R-20",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "A failed portfolio regeneration destroys the existing ratings and assessor overrides",
+      "impact": "Assessors: human review work is lost with no trace.",
+      "acs": [
+        "AC-PF-04"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None.",
+      "evidence": "api/spec/services/portfolio_generator_spec.rb"
+    },
+    {
+      "id": "R-21",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Deleting an assessment that has sessions answers 'deleted' and deletes nothing",
+      "impact": "API consumers: the response contradicts the stored data.",
+      "acs": [
+        "AC-ASM-02"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "No screen calls delete today.",
+      "evidence": "api/spec/requests/write_honesty_spec.rb"
+    },
+    {
+      "id": "R-22",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "The fit/gap table shows an empty Required column and never marks overrides",
+      "impact": "Hiring managers: the report's main table is missing half its comparison.",
+      "acs": [
+        "AC-FG-05",
+        "AC-FG-03",
+        "AC-API-02"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "The result badge and the PDF export still show the comparison.",
+      "evidence": "web/src/components/fitgap/ComparisonTable.test.tsx; api/spec/requests/fit_gap_spec.rb"
+    },
+    {
+      "id": "R-23",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "Unknown API routes raise a framework error; the ticket for it was closed as completed with no change",
+      "impact": "API consumers and the audit trail: a 'done' ticket describes work that never shipped.",
+      "acs": [
+        "AC-API-01"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None needed for users.",
+      "evidence": "api/spec/requests/write_honesty_spec.rb"
+    },
+    {
+      "id": "R-24",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "A session with no portfolio reports 'generating' forever",
+      "impact": "Assessors: an endless spinner for an interview that has not ended.",
+      "acs": [
+        "AC-PF-06"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Only reachable by URL today.",
+      "evidence": "api/spec/requests/session_lifecycle_spec.rb"
+    },
+    {
+      "id": "R-25",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "A wrong password reloads the login page instead of showing the error",
+      "impact": "Assessors: no feedback on a failed login.",
+      "acs": [
+        "AC-AUTH-01"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Retype and try again.",
+      "evidence": "web/src/services/api.test.ts"
+    },
+    {
+      "id": "R-26",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "A courtesy phrase from the AI ('good luck', 'thank you for your time') ends the interview",
+      "impact": "Candidates: an interview can be cut short mid-way on a phrase match.",
+      "acs": [
+        "AC-SES-05"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None.",
+      "evidence": "api/spec/channels/audio_websocket_closing_phrase_spec.rb"
+    },
+    {
+      "id": "R-27",
+      "severity": "P2",
+      "class": "missing-input",
+      "title": "The web app had no lockfile, so a release build could differ from what was tested",
+      "impact": "Everyone: an untested dependency version can ship.",
+      "acs": [
+        "AC-OPS-02"
+      ],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None.",
+      "evidence": "web/package-lock.json was absent from the source."
+    },
+    {
+      "id": "R-28",
+      "severity": "P2",
+      "class": "missing-input",
+      "title": "Deploy manifests are not release-ready: image tag 'latest', the worker runs as 'staging' beside a 'production' API, and no manifest provides the secrets the app needs",
+      "impact": "Operations: what runs cannot be traced to a released version.",
+      "acs": [],
+      "status": "open",
+      "owner": "Tech lead (to be named at G3 sign-off)",
+      "mitigation": "Do not apply these manifests as they are. Pin the image to the release tag at deploy time.",
+      "evidence": "By reading api/k8s/*.yaml; no cluster access."
+    },
+    {
+      "id": "R-29",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "Calls to the analysis model are configured to retry but never do",
+      "impact": "Assessors: a transient model error fails a portfolio or coverage update immediately.",
+      "acs": [],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Sidekiq retries the portfolio job three times.",
+      "evidence": "By reading api/app/clients/gemini/http_client.rb against the retry middleware defaults; not run."
+    },
+    {
+      "id": "R-30",
+      "severity": "P2",
+      "class": "missing-input",
+      "title": "A fresh setup has no user to log in with, and the signup screen calls an endpoint that does not exist",
+      "impact": "New engineers: the documented setup cannot reach a logged-in state.",
+      "acs": [],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Create a user from the Rails console.",
+      "evidence": "api/db/seeds.rb; web/src/services/auth.ts."
+    },
+    {
+      "id": "R-31",
+      "severity": "P3",
+      "class": "built-wrong",
+      "title": "Setup papercuts: bin stubs are not executable; the READMEs disagree on the API port",
+      "impact": "New engineers: minutes lost.",
+      "acs": [],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Use 'bundle exec'. The API port is 3001.",
+      "evidence": "api/bin; web/README.md; web/.env.example."
+    },
+    {
+      "id": "R-32",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "Creating an assessment answers 'system_prompt_generated: true' before the prompt exists, in a different shape from update",
+      "impact": "API consumers: a client that trusts the flag starts an interview with no prompt.",
+      "acs": [],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "The audio socket compiles a missing prompt on connect.",
+      "evidence": "By reading api/app/controllers/api/v1/assessments_controller.rb."
+    },
+    {
+      "id": "R-33",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "The fit/gap page re-queues generation on every poll and has no failed state",
+      "impact": "Operations and assessors: duplicate model calls, and an endless spinner if generation fails.",
+      "acs": [],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Reload the page.",
+      "evidence": "By reading web/src/pages/fitgap/FitGapReportPage.tsx."
+    },
+    {
+      "id": "R-34",
+      "severity": "P2",
+      "class": "missing-spec",
+      "title": "A skill is promoted to 'covered' on probe count alone, which PRD-01 section 4 does not allow",
+      "impact": "Hiring managers: 'covered' and therefore HIGH confidence can be reached without the evidence test.",
+      "acs": [],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "Promotion needs at least four exchanges on the skill.",
+      "evidence": "By reading api/app/workers/coverage_analyzer_worker.rb (advance_stale_partials)."
+    },
+    {
+      "id": "R-35",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "Transcript turns are written on background threads and write errors are swallowed",
+      "impact": "Hiring managers: a transcript can be missing turns with no signal, and ratings are generated from it.",
+      "acs": [],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "Errors are logged.",
+      "evidence": "By reading api/app/channels/audio_websocket_middleware.rb (save_transcript_turn)."
+    },
+    {
+      "id": "R-36",
+      "severity": "P2",
+      "class": "missing-input",
+      "title": "No feature had acceptance criteria, a design plan, or any test before this audit",
+      "impact": "Everyone: nobody could say whether a feature was correct. The criteria written here are the auditor's reading and need product sign-off.",
+      "acs": [],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "docs/specs/acceptance-criteria.md now holds reviewable criteria; the gate requires them for every runtime change.",
+      "evidence": "The wiki holds two narrative PRDs; the repo had no spec directory and no tests."
+    },
+    {
+      "id": "R-37",
+      "severity": "P2",
+      "class": "missing-spec",
+      "title": "Shipped behaviour with no spec at all: login and users, the tenancy model, candidate consent and recording retention, export contents, rate limits, the 10-minute time limit",
+      "impact": "Clients and candidates: a voice interview is recorded and sent to a third-party model with no consent step or retention rule defined.",
+      "acs": [],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "None. Needs a product and legal decision before client data is processed.",
+      "evidence": "No document covers these; the code is the only statement of intent."
+    }
+  ]
+}

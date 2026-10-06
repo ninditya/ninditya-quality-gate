@@ -1,0 +1,76 @@
+# The release gate. Pushing a tag vX.Y.Z runs the whole quality net against
+# exactly that commit, then decides RELEASABLE or BLOCKED and writes the answer
+# where anyone can read it without opening a log:
+#
+#   - the GitHub Release for the tag is titled "vX.Y.Z — RELEASABLE" or
+#     "vX.Y.Z — BLOCKED", and its body lists what was checked and why
+#   - the tagged commit gets a `release-gate` status, green or red
+#   - this run is green only when the version is releasable
+#
+# Nothing here is specific to one version: tag the next release and it runs again.
+name: release-gate
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  net:
+    name: Quality net at the tag
+    uses: ./.github/workflows/quality-net.yml
+
+  release-gate:
+    name: Release gate
+    needs: net
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create or update the GitHub Release
+      statuses: write # put the verdict on the tagged commit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Decide
+        id: gate
+        continue-on-error: true
+        env:
+          NET_RESULT: ${{ needs.net.result }}
+        run: node quality/gate/release.mjs --tag "$GITHUB_REF_NAME" --net "$NET_RESULT" --out release-status.md
+
+      - name: Publish the verdict on the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS: ${{ steps.gate.outputs.status }}
+        run: |
+          if [ "$STATUS" = "RELEASABLE" ]; then
+            state=success; verdict="RELEASABLE"; flags=(--latest)
+          else
+            # A blocked version is published as a pre-release so it is never shown as "Latest".
+            state=failure; verdict="BLOCKED"; flags=(--prerelease --latest=false)
+          fi
+          [ -s release-status.md ] || echo "# ⛔ $GITHUB_REF_NAME is BLOCKED: the release gate did not produce a verdict" > release-status.md
+          title="$GITHUB_REF_NAME — $verdict"
+
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$state" -f context="release-gate" -f description="$title" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "$title" --notes-file release-status.md "${flags[@]}"
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$title" --notes-file release-status.md "${flags[@]}"
+          fi
+
+      - name: Fail when the version is blocked
+        if: steps.gate.outputs.status != 'RELEASABLE'
+        run: |
+          echo "::error::$GITHUB_REF_NAME is BLOCKED. See the release page or the run summary for the reasons."
+          exit 1

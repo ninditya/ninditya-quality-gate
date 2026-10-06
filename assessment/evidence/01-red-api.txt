@@ -1,0 +1,32 @@
+# API suite — at the commit that introduces the net, before any fix
+# docker compose -f docker-compose.test.yml run --rm api-test
+
+40 examples, 27 failures
+
+RED  spec/boot_spec.rb  Application boot eager-loads every class the way production does [AC-OPS-01]
+RED  spec/channels/audio_websocket_closing_phrase_spec.rb  AudioWebSocketMiddleware keeps the interview going when the AI is merely being polite [AC-SES-05]
+RED  spec/channels/audio_websocket_grace_period_spec.rb  AudioWebSocketMiddleware does not end the interview when the candidate has already reconnected [AC-SES-03]
+RED  spec/requests/contract_spec.rb  API contracts the web app depends on GET /portfolios/:id/fitgap/:vacancy_id matches contracts/fit_gap_report.json [AC-API-02]
+RED  spec/requests/fit_gap_spec.rb  Fit/gap report does not serve a report computed against requirements that have since changed [AC-FG-04]
+RED  spec/requests/fit_gap_spec.rb  Fit/gap report marks a level that came from a human override [AC-FG-03]
+RED  spec/requests/fit_gap_spec.rb  Fit/gap report reports an unrated skill as not assessed, never as a gap [AC-FG-02]
+RED  spec/requests/session_lifecycle_spec.rb  Session lifecycle GET /sessions/:id/portfolio does not report "generating" for a session that has no portfolio [AC-PF-06]
+RED  spec/requests/session_lifecycle_spec.rb  Session lifecycle POST /sessions/:token/audio_complete (no login, invite token only) does not end an interview that never started [AC-SES-01]
+RED  spec/requests/session_lifecycle_spec.rb  Session lifecycle POST /sessions/:token/audio_complete (no login, invite token only) records all_covered only when every configured skill really is covered [AC-SES-02]
+RED  spec/requests/session_lifecycle_spec.rb  Session lifecycle invite link points the candidate at the web app, not the API host [AC-INV-01]
+RED  spec/requests/tenant_isolation_spec.rb  Tenant isolation does not export another tenant portfolio [AC-SEC-01]
+RED  spec/requests/tenant_isolation_spec.rb  Tenant isolation does not let another tenant override a rating [AC-SEC-02]
+RED  spec/requests/tenant_isolation_spec.rb  Tenant isolation does not run a fit/gap on another tenant portfolio [AC-SEC-01]
+RED  spec/requests/tenant_isolation_spec.rb  Tenant isolation does not show another tenant fit/gap report [AC-SEC-01]
+RED  spec/requests/tenant_isolation_spec.rb  Tenant isolation login never issues a token for a tenant the caller merely names in a header [AC-SEC-03]
+RED  spec/requests/write_honesty_spec.rb  Write honesty DELETE /assessments/:id does not claim success when the assessment still exists [AC-ASM-02]
+RED  spec/requests/write_honesty_spec.rb  Write honesty PUT with a skill removed in the edit form removes the skill from the assessment [AC-ASM-01]
+RED  spec/requests/write_honesty_spec.rb  Write honesty PUT with a skill removed in the edit form removes the skill from the vacancy [AC-VAC-01]
+RED  spec/requests/write_honesty_spec.rb  Write honesty unknown routes answers JSON 404, never an HTML error page [AC-API-01]
+RED  spec/services/portfolio_generator_spec.rb  Portfolios::Generator derives confidence from coverage, not from the model [AC-PF-03]
+RED  spec/services/portfolio_generator_spec.rb  Portfolios::Generator does not ask the model to rate an interview with no candidate speech [AC-PF-05]
+RED  spec/services/portfolio_generator_spec.rb  Portfolios::Generator does not rate a skill that was never discussed, whatever the model says [AC-PF-01]
+RED  spec/services/portfolio_generator_spec.rb  Portfolios::Generator keeps a configured skill the model left out, marked as not assessed [AC-PF-02]
+RED  spec/services/portfolio_generator_spec.rb  Portfolios::Generator keeps the previous ratings and overrides when regeneration fails [AC-PF-04]
+RED  spec/services/portfolio_generator_spec.rb  Portfolios::Generator never turns a skill the model could not rate into L1 [AC-PF-01]
+RED  spec/tenant_scoping_guard_spec.rb  Tenant scoping guard reaches tenant-less tables only through a tenant scope [AC-SEC-04]

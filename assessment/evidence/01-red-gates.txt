@@ -1,0 +1,5 @@
+# Gates — at the commit that introduces the net, before any fix
+
+# tests 22 # pass 22 # fail 0 
+PASS  Traceability: 31 enforced criteria each have a test; every test tag resolves
+PASS  Confidentiality: no forbidden company or client name in any tracked file or commit message

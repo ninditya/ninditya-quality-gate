@@ -1,0 +1,19 @@
+# Web suite — at the commit that introduces the net, before any fix
+# cd web && npm run typecheck && npm test
+
+Test Files  6 failed | 1 passed (7)
+Tests  10 failed | 6 passed (16)
+
+RED  src/components/assessment/LevelRadio.test.tsx > LevelRadio > changes only its own skill when a level label is clicked [AC-VAC-02]
+RED  src/components/fitgap/ComparisonTable.test.tsx > ComparisonTable against the API contract > shows an unrated skill as not assessed, with no level [AC-FG-02]
+RED  src/components/fitgap/ComparisonTable.test.tsx > ComparisonTable against the API contract > shows the level the vacancy requires [AC-FG-05]
+RED  src/components/portfolio/SkillPortfolioCard.test.tsx > SkillPortfolioCard against the API contract > shows a skill that was not assessed as not assessed, never as L1 [AC-PF-01]
+RED  src/hooks/useAudioWebSocket.test.ts > useAudioWebSocket end states > reports failure, not completion, on a non-recoverable error [AC-INT-02]
+RED  src/hooks/useAudioWebSocket.test.ts > useAudioWebSocket end states > reports failure, not completion, when reconnecting gives up [AC-INT-02]
+RED  src/hooks/useAudioWebSocket.test.ts > useAudioWebSocket end states > reports failure, not completion, when the server ends the session on an error [AC-INT-02]
+RED  src/pages/interview/InterviewPage.test.tsx > InterviewPage > does not report completion when the interview could not be loaded [AC-INT-01]
+RED  src/pages/interview/InterviewPage.test.tsx > InterviewPage > does not tell a candidate with a bad link that the interview is complete [AC-INT-01]
+RED  src/services/api.test.ts > api 401/403 handling > lets the login form show its own error on a wrong password [AC-AUTH-01]
+
+typecheck: 1 error(s)
+RED  src/components/fitgap/ComparisonTable.test.tsx(9,21): error TS2352: Conversion of type '({ skill_label: string; skill_id: string; candidate_level: number; expec

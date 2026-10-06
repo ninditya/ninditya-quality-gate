@@ -1,0 +1,42 @@
+{
+  "report": {
+    "id": 12,
+    "portfolio_id": 7,
+    "vacancy_id": 3,
+    "skill_comparisons": [
+      {
+        "skill_label": "React / Frontend Development",
+        "skill_id": "sk-eng-001",
+        "candidate_level": 4,
+        "expected_level": 3,
+        "result": "exceed",
+        "delta": 1,
+        "confidence": "high",
+        "is_override": true
+      },
+      {
+        "skill_label": "Communication",
+        "skill_id": null,
+        "candidate_level": 2,
+        "expected_level": 3,
+        "result": "gap",
+        "delta": -1,
+        "confidence": "medium",
+        "is_override": false
+      },
+      {
+        "skill_label": "System Design",
+        "skill_id": null,
+        "candidate_level": null,
+        "expected_level": 2,
+        "result": "not_assessed",
+        "delta": null,
+        "confidence": null,
+        "is_override": false
+      }
+    ],
+    "culture_narrative": "Ownership mindset aligns with the team culture.",
+    "overall_narrative": "Strong technical fit; probe async communication.",
+    "generated_at": "2026-02-28T09:41:00.000Z"
+  }
+}

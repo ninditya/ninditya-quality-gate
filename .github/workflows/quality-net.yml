@@ -1,0 +1,144 @@
+# The quality net. Runs on every push to main, on every pull request, and is
+# called by the release gate for a tag. It goes red by itself: nothing here
+# waits for a human.
+#
+# One job, `quality-net`, summarises the rest. Protect main with that single
+# required status and nothing can merge around the net.
+name: quality-net
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # `edited` re-runs the gate when the description is fixed, without a new commit.
+    types: [opened, edited, synchronize, reopened]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-net-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  api:
+    name: API suite (data, isolation, lifecycle, contracts)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      RAILS_ENV: test
+      CI: "true"
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_URL: redis://127.0.0.1:6379/1
+      SECRET_KEY_BASE: test-only-secret-key-base-not-used-anywhere-else
+      ALLOWED_ORIGINS: http://localhost:5173
+      APP_BASE_URL: http://api.test
+      WEB_BASE_URL: http://web.test
+      GEMINI_API_KEY: test-key-never-sent
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3.2"
+          bundler-cache: true
+          working-directory: api
+      - name: Prepare the database
+        run: bundle exec rails db:create db:schema:load
+      - name: Run the API suite
+        run: bundle exec rspec
+
+  web:
+    name: Web suite (contracts, candidate honesty, forms, build)
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      # Each step reports on its own, so one red does not hide the others.
+      - name: Type check (web types against the API contracts)
+        run: npm run typecheck
+      - name: Run the web suite
+        if: ${{ !cancelled() }}
+        run: npm test
+      - name: Production build
+        if: ${{ !cancelled() }}
+        run: npm run build
+
+  gates:
+    name: Gates (traceability, confidentiality)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # commit messages are checked too
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The gates work (self-tests)
+        run: node --test quality/gate/gate.test.mjs
+      - name: Traceability is complete both ways
+        run: node quality/gate/traceability.mjs
+      - name: No company or client name in the repository
+        run: node quality/gate/confidentiality.mjs
+
+  definition-of-ready:
+    name: Definition of Ready (spec, criteria, design plan, tests)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The change carries its inputs
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node quality/gate/dor.mjs --base "origin/$BASE_REF" --head HEAD
+
+  quality-net:
+    name: quality-net
+    if: always()
+    needs: [api, web, gates, definition-of-ready]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every part of the net is green
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          # "skipped" is only legitimate for the pull-request-only gate on a push.
+          echo "$RESULTS" | jq -e 'to_entries | all(.value.result == "success" or (.key == "definition-of-ready" and .value.result == "skipped"))' > /dev/null

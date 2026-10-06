@@ -1,0 +1,43 @@
+{
+  "portfolio": {
+    "id": 7,
+    "session_id": 21,
+    "candidate_id": null,
+    "generation_status": "complete",
+    "generated_at": "2026-02-28T09:41:00.000Z",
+    "generation_error": null,
+    "skills": [
+      {
+        "id": 31,
+        "skill_id": "sk-eng-001",
+        "skill_label": "React / Frontend Development",
+        "is_discovered": false,
+        "ai_level": 3,
+        "ai_confidence": "high",
+        "evidence": ["We moved real-time data into local component state with useRef."],
+        "competency_summary": "Handles complex state management with clear tradeoff reasoning."
+      },
+      {
+        "id": 32,
+        "skill_id": null,
+        "skill_label": "System Design",
+        "is_discovered": false,
+        "ai_level": null,
+        "ai_confidence": "low",
+        "evidence": [],
+        "competency_summary": "Not assessed: this skill was not discussed in the interview."
+      }
+    ],
+    "overrides": [
+      {
+        "id": 5,
+        "portfolio_skill_id": 31,
+        "ai_level": 3,
+        "override_level": 4,
+        "assessor_notes": "Stronger than the AI rated.",
+        "overridden_by": 1,
+        "overridden_at": "2026-02-28T10:00:00.000Z"
+      }
+    ]
+  }
+}

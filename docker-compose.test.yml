@@ -1,0 +1,60 @@
+# Reproducible test stack for the quality net.
+# Mirrors the services CI uses, so a check that is red here is red in CI.
+#
+#   docker compose -f docker-compose.test.yml run --rm api-test
+#
+# No ports are published: the stack is self-contained and never collides
+# with a Postgres or Redis already running on the host.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api-test:
+    image: ruby:3.3.2
+    working_dir: /app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: test
+      CI: "true"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/1
+      SECRET_KEY_BASE: test-only-secret-key-base-not-used-anywhere-else
+      ALLOWED_ORIGINS: http://localhost:5173
+      APP_BASE_URL: http://api.test
+      WEB_BASE_URL: http://web.test
+      GEMINI_API_KEY: test-key-never-sent
+      BUNDLE_PATH: /bundle
+    volumes:
+      - ./api:/app
+      - ./contracts:/contracts
+      - bundle:/bundle
+    command: >
+      bash -lc "bundle check || bundle install --jobs 4 &&
+                bin/rails db:create db:schema:load &&
+                bundle exec rspec"
+
+volumes:
+  bundle:
