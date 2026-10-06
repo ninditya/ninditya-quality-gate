@@ -63,6 +63,18 @@ RSpec.describe AudioWebSocketMiddleware do
     expect(PortfolioGeneratorWorker.jobs).to be_empty
   end
 
+  it 'ends the interview when the candidate drops again and stays away [AC-SES-03]' do
+    first_socket, first_state = open_connection
+    drop(first_socket, first_state)
+    second_socket, second_state = open_connection
+    drop(second_socket, second_state)
+
+    timers.each(&:call)
+
+    expect(session.reload).to have_attributes(status: 'ended', end_reason: 'error')
+    expect(PortfolioGeneratorWorker.jobs.size).to eq(1)
+  end
+
   it 'still ends an interview the candidate really abandoned' do
     socket, state = open_connection
     drop(socket, state)

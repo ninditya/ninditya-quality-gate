@@ -105,10 +105,11 @@
       "acs": [
         "AC-SES-03"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None. A network blip or page refresh is enough.",
-      "evidence": "api/spec/channels/audio_websocket_grace_period_spec.rb"
+      "evidence": "api/spec/channels/audio_websocket_grace_period_spec.rb",
+      "fix": "The newest audio connection records itself on the session; a dropped connection's grace timer ends the interview only if it is still that connection."
     },
     {
       "id": "R-08",

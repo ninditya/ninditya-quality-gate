@@ -56,10 +56,20 @@ class AudioWebSocketMiddleware
     end
 
     state.session = session
+    claim_connection(session, state)
     connect_to_gemini(browser_ws, state)
   rescue StandardError => e
     Rails.logger.error("[AudioWS] Exception in on:open: #{e.class}: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
     browser_ws.close
+  end
+
+  # Marks this socket as the candidate's current connection. A page refresh or a
+  # network blip opens a new socket with its own ConnectionState, so the only
+  # truth the two share is the session row: whichever connection claimed it
+  # last is the live one, in this process or any other.
+  def claim_connection(session, state)
+    state.connection_id = SecureRandom.hex(8)
+    session.update_column(:audio_connection_id, state.connection_id)
   end
 
   def handle_browser_frame(event, browser_ws, state, session_id)
@@ -504,10 +514,20 @@ class AudioWebSocketMiddleware
     state.graceful_end_timer = EM::Timer.new(BROWSER_GRACE_PERIOD) do
       Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
-          next if state.session.reload.ended?
+          session = state.session.reload
+          next if session.ended?
 
-          Rails.logger.info("[AudioWS] Grace period expired — ending session #{state.session.id}")
-          Sessions::EndHandler.new(state.session).call(reason: 'error')
+          # The candidate is back on a newer connection: this drop was a blip,
+          # not an exit. Release this connection's model session and leave the
+          # interview alone.
+          if session.audio_connection_id != state.connection_id
+            Rails.logger.info("[AudioWS] Grace period expired on a replaced connection — session #{session.id} continues")
+            EM.schedule { state.gemini_client&.close }
+            next
+          end
+
+          Rails.logger.info("[AudioWS] Grace period expired — ending session #{session.id}")
+          Sessions::EndHandler.new(session).call(reason: 'error')
           EM.schedule { state.gemini_client&.close }
         end
       rescue StandardError => e
@@ -785,7 +805,7 @@ class AudioWebSocketMiddleware
                   :graceful_end_timer, :time_ceiling_timer,
                   :coverage_end_timer, :coverage_pending,
                   :last_ai_turn_ends_with_question, :wrap_up_injected,
-                  :waiting_for_candidate_response
+                  :waiting_for_candidate_response, :connection_id
 
     def initialize
       @turn_counter = 0
