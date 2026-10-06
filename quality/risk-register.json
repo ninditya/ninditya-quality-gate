@@ -546,6 +546,42 @@
       "mitigation": "None.",
       "evidence": "web/src/pages/interview/InterviewPage.test.tsx; found while fixing R-19",
       "fix": "The end is reported over HTTP when the socket is down; if that fails too, the page reports the interview was not completed."
+    },
+    {
+      "id": "R-39",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "The web app falls back to a build-time developer token when nobody is signed in",
+      "impact": "Client tenants: a build made with VITE_DEV_TOKEN set ships that token inside the public bundle, and every visitor is signed in as it.",
+      "acs": [],
+      "status": "open",
+      "owner": "Tech lead (to be named at G3 sign-off)",
+      "mitigation": "Not set in any committed configuration. Never set VITE_DEV_TOKEN for a deployed build; remove the fallback or strip it from production builds.",
+      "evidence": "By reading web/src/stores/authAtom.ts (getStoredToken) and web/.env.example."
+    },
+    {
+      "id": "R-40",
+      "severity": "P2",
+      "class": "built-wrong",
+      "title": "Assessor pages show an empty form or a blank page when a resource does not exist or fails to load; the ticket for it (T-2) was closed as not planned",
+      "impact": "Assessors: a mistyped or stale link looks the same as a record with no data, and saving the empty form sends an update for a record that is not there.",
+      "acs": [],
+      "status": "open",
+      "owner": "Product owner (to be named at G2 sign-off)",
+      "mitigation": "The API answers 404 for the missing record, so nothing is stored. The decision not to fix is the product owner's; it should be revisited for the result pages.",
+      "evidence": "T-2; by reading the load handlers in web/src/pages (four of them end in `.catch(() => {})`)."
+    },
+    {
+      "id": "R-41",
+      "severity": "P2",
+      "class": "missing-input",
+      "title": "Dependencies have never been audited: the web build and test tooling carries 11 known advisories, and the API's gems were not checked at all",
+      "impact": "Engineers and CI: a vulnerable tool runs on developer machines and in the pipeline. Nothing known reaches the shipped bundle.",
+      "acs": [],
+      "status": "open",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "`npm audit --omit=dev` is clean, so no advisory is in code that ships. CI runs with a read-only token and no secrets. Triage the 11, and add a gem audit to the net.",
+      "evidence": "`cd web && npm audit`: 11 advisories (4 moderate, 5 high, 2 critical) in the tailwind and vitest chains. No audit tool is installed for the API."
     }
   ]
 }
