@@ -224,10 +224,11 @@
       "acs": [
         "AC-SEC-06"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Tech lead (to be named at G3 sign-off)",
       "mitigation": "Limited to the caller's own tenant.",
-      "evidence": "By reading api/app/channels/coverage_websocket_middleware.rb."
+      "evidence": "By reading api/app/channels/coverage_websocket_middleware.rb.",
+      "fix": "The socket accepts only the roles the HTTP API accepts for assessor routes."
     },
     {
       "id": "R-16",

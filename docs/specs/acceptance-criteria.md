@@ -100,7 +100,7 @@ Format: `### <id> — <title>`, then `Source`, `Status`, and Given/When/Then.
 
 ### AC-SEC-06 — Only assessors can watch a live interview
 - Source: Derived
-- Status: deferred (R-15)
+- Status: enforced
 - Given a validly signed token whose role is not an assessor role
 - When it connects to the live coverage socket of a session in its tenant
 - Then the connection is refused
