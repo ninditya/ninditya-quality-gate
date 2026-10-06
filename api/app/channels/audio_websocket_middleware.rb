@@ -257,7 +257,7 @@ class AudioWebSocketMiddleware
 
       # Safety net: if AI said closing words, set coverage_pending and schedule a 15s fallback
       # finalizer in case on_model_turn_complete never fires (Gemini sometimes skips turnComplete).
-      if !state.ending_scheduled && ai_closing_detected?(text)
+      if !state.ending_scheduled && closing_expected?(state, session) && ai_closing_detected?(text)
         unless state.coverage_pending
           Rails.logger.warn("[AudioWS] AI closed without system signal — forcing coverage_pending (session=#{session.id})")
           state.coverage_pending = true
@@ -746,6 +746,16 @@ class AudioWebSocketMiddleware
     'sesi wawancara ini telah selesai',
     'wawancara kita sudah selesai'
   ].freeze
+
+  # A closing phrase means "the interview is over" only when the AI has a reason
+  # to close: every configured skill is covered, or a wrap-up was signalled for
+  # coverage or time (PRD-01 section 2, rule 7). Without one, "good luck" and
+  # "thank you for your time" are things an interviewer says in passing.
+  def closing_expected?(state, session)
+    state.coverage_pending || state.wrap_up_injected ||
+      state.sent_time_warnings.include?(:warn_60) || state.sent_time_warnings.include?(:ceiling) ||
+      Sessions::EndReason.all_configured_covered?(session)
+  end
 
   def ai_closing_detected?(text)
     downcased = text.downcase

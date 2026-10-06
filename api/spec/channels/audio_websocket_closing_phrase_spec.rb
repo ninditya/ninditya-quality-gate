@@ -35,6 +35,23 @@ RSpec.describe AudioWebSocketMiddleware do
     expect(scheduled).to be_empty
   end
 
+  it 'treats a closing phrase as the close when every configured skill is covered [AC-SES-05]' do
+    session.coverage_maps.update_all(state: 'covered', probe_count: 3)
+
+    ai_says('That covers everything. Thank you for your time today.')
+
+    expect(state.coverage_pending).to be(true)
+    expect(scheduled).not_to be_empty
+  end
+
+  it 'treats a closing phrase as the close after the one-minute time warning [AC-SES-05]' do
+    state.sent_time_warnings.add(:warn_60)
+
+    ai_says('We are out of time. Thank you for your time today.')
+
+    expect(state.coverage_pending).to be(true)
+  end
+
   it 'still treats a closing phrase as the close once wrap-up was signalled' do
     state.wrap_up_injected = true
 

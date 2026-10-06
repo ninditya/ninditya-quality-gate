@@ -382,10 +382,11 @@
       "acs": [
         "AC-SES-05"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None.",
-      "evidence": "api/spec/channels/audio_websocket_closing_phrase_spec.rb"
+      "evidence": "api/spec/channels/audio_websocket_closing_phrase_spec.rb",
+      "fix": "A closing phrase ends the interview only when the AI had a reason to close: skills covered or a wrap-up signalled."
     },
     {
       "id": "R-27",
