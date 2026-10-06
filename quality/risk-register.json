@@ -163,10 +163,11 @@
       "acs": [
         "AC-FG-04"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "Press Regenerate, if you know the vacancy changed.",
-      "evidence": "api/spec/requests/fit_gap_spec.rb"
+      "evidence": "api/spec/requests/fit_gap_spec.rb",
+      "fix": "A report knows when it is stale (vacancy or portfolio newer than the report) and is then regenerated instead of served, on trigger, read and export."
     },
     {
       "id": "R-12",

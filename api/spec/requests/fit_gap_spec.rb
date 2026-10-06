@@ -103,4 +103,32 @@ RSpec.describe 'Fit/gap report', type: :request do
     expect(response).to have_http_status(:accepted)
     expect(FitGapGeneratorWorker.jobs.size).to eq(1)
   end
+
+  it 'treats a removed requirement as a change too, on read and on export [AC-FG-04]' do
+    extra = create(:vacancy_skill, vacancy: vacancy, skill_label: 'Communication', expected_level: 3)
+    run_engine
+
+    Timecop.freeze(1.minute.from_now) do
+      extra.destroy!
+
+      get "/api/v1/portfolios/#{portfolio.id}/fitgap/#{vacancy.id}", headers: headers
+      expect(response).to have_http_status(:not_found)
+
+      get "/api/v1/portfolios/#{portfolio.id}/export",
+          params: { format: 'json', vacancy_id: vacancy.id }, headers: headers
+      expect(JSON.parse(response.body)['fit_gap_report']).to be_nil
+    end
+  end
+
+  it 'keeps serving a report whose inputs have not changed [AC-FG-04]' do
+    run_engine
+
+    Timecop.freeze(1.minute.from_now) do
+      post "/api/v1/portfolios/#{portfolio.id}/fitgap",
+           params: { fitgap: { vacancy_id: vacancy.id } }, headers: headers, as: :json
+    end
+
+    expect(response).to have_http_status(:ok)
+    expect(FitGapGeneratorWorker.jobs).to be_empty
+  end
 end

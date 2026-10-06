@@ -113,12 +113,14 @@ module Api
           return json_error("Portfolio is not ready (status: #{portfolio.generation_status})", :unprocessable_entity)
         end
 
-        # Return cached report if it exists and portfolio has no new overrides
+        # A stored report is served only while it still matches the vacancy and
+        # the ratings it was computed from. A stale one is replaced, never shown.
         existing = portfolio.fit_gap_reports.find_by(vacancy_id: vacancy.id)
-        if existing
+        if existing && !existing.stale?
           return json_response(report: fit_gap_json(existing))
         end
 
+        existing&.destroy
         FitGapGeneratorWorker.perform_async(portfolio.id, vacancy.id)
         render json: { status: "generating", message: "Fit/gap report generation queued" }, status: :accepted
       rescue ActiveRecord::RecordNotFound
@@ -132,6 +134,11 @@ module Api
 
         if report.nil?
           return json_error("Fit/gap report not found", :not_found)
+        end
+
+        # Same answer as "no report": the web app reacts to 404 by requesting a new one.
+        if report.stale?
+          return json_error("Fit/gap report is out of date and must be regenerated", :not_found)
         end
 
         json_response(report: fit_gap_json(report))
@@ -223,7 +230,7 @@ module Api
 
         if vacancy_id.present?
           report = portfolio.fit_gap_reports.find_by(vacancy_id: vacancy_id)
-          data[:fit_gap_report] = report ? fit_gap_json(report) : nil
+          data[:fit_gap_report] = report && !report.stale? ? fit_gap_json(report) : nil
         end
 
         data
