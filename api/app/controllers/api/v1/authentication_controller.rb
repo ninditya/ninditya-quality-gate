@@ -13,19 +13,19 @@ module Api
 
         return json_error('Invalid email or password', :unauthorized) unless user.role == 'admin'
 
-        scheme = resolve_scheme
-        token  = JsonWebToken.encode({ user_id: user.id, role: user.role, scheme: })
+        # The tenant comes from the account, never from the request. It used to
+        # be taken from an X-Tenant-Scheme header (or "the first organization"),
+        # which let any assessor mint a token for any tenant.
+        organization = user.organization
+        return json_error('This account is not linked to an organization', :forbidden) unless organization
 
-        json_response({ token:, user: { id: user.id, email: user.email, role: user.role } })
-      end
+        token = JsonWebToken.encode({ user_id: user.id, role: user.role, scheme: organization.scheme })
 
-      private
-
-      def resolve_scheme
-        request.headers['X-Tenant-Scheme'].presence ||
-          ActiveRecord::Base.connection.select_value(
-            'SELECT scheme FROM organizations LIMIT 1'
-          ) || 'test-corp'
+        json_response({
+          token:,
+          user:         { id: user.id, email: user.email, role: user.role },
+          organization: { id: organization.id, name: organization.name }
+        })
       end
     end
   end

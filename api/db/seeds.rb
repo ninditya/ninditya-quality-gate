@@ -403,3 +403,21 @@ puts ""
 puts "  curl -s -H 'Authorization: Bearer <your_token>' \\"
 puts "       http://localhost:3001/api/v1/assessments"
 puts ""
+
+# ── Dev assessor login ───────────────────────────────────────────────────────
+#
+# An account is bound to one organization, and the login token is scoped to it.
+# Without this a fresh setup has nobody who can sign in to the web app.
+
+assessor = User.find_or_initialize_by(email: 'assessor@test-corp.example')
+if assessor.new_record?
+  password = ENV.fetch('SEED_ASSESSOR_PASSWORD') { SecureRandom.alphanumeric(16) }
+  assessor.update!(password: password, role: 'admin', organization_id: org['id'])
+  puts ""
+  puts "  Created assessor login (development only):"
+  puts "    email    : #{assessor.email}"
+  puts "    password : #{password}"
+else
+  assessor.update!(organization_id: org['id']) if assessor.organization_id.nil?
+  puts "  Assessor login already exists: #{assessor.email} (skipped)"
+end

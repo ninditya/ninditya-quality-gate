@@ -3,6 +3,10 @@
 class User < ApplicationRecord
   has_secure_password
 
+  # The tenant this account acts for. A login token is scoped to it and to
+  # nothing else; an account without one cannot sign in.
+  belongs_to :organization, optional: true
+
   ROLES = %w[admin user].freeze
 
   validates :email, presence: true,

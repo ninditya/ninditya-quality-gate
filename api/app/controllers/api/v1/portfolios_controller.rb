@@ -79,7 +79,7 @@ module Api
 
       # POST /api/v1/portfolios/:id/regenerate_fitgap
       def regenerate_fitgap
-        portfolio  = Portfolio.find(params[:id])
+        portfolio  = owned_portfolios.find(params[:id])
         vacancy_id = params[:vacancy_id]
 
         return json_error("vacancy_id is required", :unprocessable_entity) if vacancy_id.blank?
@@ -91,7 +91,7 @@ module Api
           return json_error("Portfolio is not ready (status: #{portfolio.generation_status})", :unprocessable_entity)
         end
 
-        FitGapReport.find_by(portfolio_id: portfolio.id, vacancy_id: vacancy.id)&.destroy
+        portfolio.fit_gap_reports.find_by(vacancy_id: vacancy.id)&.destroy
         FitGapGeneratorWorker.perform_async(portfolio.id, vacancy.id)
 
         render json: { status: "generating", message: "Fit/gap report regeneration queued" }, status: :accepted
@@ -101,7 +101,7 @@ module Api
 
       # POST /api/v1/portfolios/:id/fitgap
       def fitgap
-        portfolio = Portfolio.find(params[:id])
+        portfolio = owned_portfolios.find(params[:id])
 
         vacancy_id = params.dig(:fitgap, :vacancy_id) || params[:vacancy_id]
         return json_error("vacancy_id is required", :unprocessable_entity) if vacancy_id.blank?
@@ -114,7 +114,7 @@ module Api
         end
 
         # Return cached report if it exists and portfolio has no new overrides
-        existing = FitGapReport.find_by(portfolio_id: portfolio.id, vacancy_id: vacancy.id)
+        existing = portfolio.fit_gap_reports.find_by(vacancy_id: vacancy.id)
         if existing
           return json_response(report: fit_gap_json(existing))
         end
@@ -127,8 +127,8 @@ module Api
 
       # GET /api/v1/portfolios/:id/fitgap/:vacancy_id
       def show_fitgap
-        portfolio = Portfolio.find(params[:id])
-        report    = FitGapReport.find_by(portfolio_id: portfolio.id, vacancy_id: params[:vacancy_id])
+        portfolio = owned_portfolios.find(params[:id])
+        report    = portfolio.fit_gap_reports.find_by(vacancy_id: params[:vacancy_id])
 
         if report.nil?
           return json_error("Fit/gap report not found", :not_found)
@@ -147,13 +147,19 @@ module Api
         json_error("Session not found", :not_found)
       end
 
+      # Portfolios have no tenant_id, so an id from the URL proves nothing about
+      # ownership. Every lookup by id starts here.
+      def owned_portfolios
+        Portfolio.for_tenant(current_tenant_id)
+      end
+
       def set_portfolio
         # Routes use :id for both session-based and direct portfolio lookups
         # If called from session context, look up via session
         if @session
           @portfolio = @session.portfolio
         else
-          @portfolio = Portfolio.find(params[:id])
+          @portfolio = owned_portfolios.find(params[:id])
         end
       rescue ActiveRecord::RecordNotFound
         json_error("Portfolio not found", :not_found)
@@ -216,7 +222,7 @@ module Api
         }
 
         if vacancy_id.present?
-          report = FitGapReport.find_by(portfolio_id: portfolio.id, vacancy_id: vacancy_id)
+          report = portfolio.fit_gap_reports.find_by(vacancy_id: vacancy_id)
           data[:fit_gap_report] = report ? fit_gap_json(report) : nil
         end
 

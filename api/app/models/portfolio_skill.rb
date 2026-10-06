@@ -6,6 +6,11 @@ class PortfolioSkill < ApplicationRecord
   belongs_to :portfolio
   has_one :assessor_override, dependent: :destroy
 
+  # Tenant ownership is inherited from the portfolio (see Portfolio.for_tenant).
+  scope :for_tenant, lambda { |tenant_id|
+    where(portfolio_id: Portfolio.for_tenant(tenant_id).select(:id))
+  }
+
   validates :skill_label, presence: true
   validates :ai_level, numericality: { only_integer: true, in: 1..5 }
   validates :ai_confidence, inclusion: { in: CONFIDENCE_LEVELS }

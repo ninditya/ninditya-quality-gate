@@ -54,6 +54,11 @@ RSpec.describe 'Tenant isolation', type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
+  it 'treats a missing tenant as no tenant, not as every tenant [AC-SEC-01]' do
+    expect(Portfolio.for_tenant(nil)).to be_empty
+    expect(PortfolioSkill.for_tenant(nil)).to be_empty
+  end
+
   it 'still serves the owning tenant' do
     get "/api/v1/portfolios/#{portfolio_a.id}/export", params: { format: 'json' }, headers: auth_headers(org_a)
 

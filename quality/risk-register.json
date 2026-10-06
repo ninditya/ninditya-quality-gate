@@ -42,10 +42,11 @@
         "AC-SEC-02",
         "AC-SEC-04"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None. Ids are sequential integers.",
-      "evidence": "api/spec/requests/tenant_isolation_spec.rb"
+      "evidence": "api/spec/requests/tenant_isolation_spec.rb",
+      "fix": "Portfolio.for_tenant / PortfolioSkill.for_tenant; every controller lookup by id goes through them, and a structural spec fails on the next bare lookup."
     },
     {
       "id": "R-04",
@@ -56,10 +57,11 @@
       "acs": [
         "AC-SEC-03"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None. The users table has no organization.",
-      "evidence": "api/spec/requests/tenant_isolation_spec.rb"
+      "evidence": "api/spec/requests/tenant_isolation_spec.rb",
+      "fix": "users.organization_id; the login token is scoped to the account's organization and the request header is ignored."
     },
     {
       "id": "R-05",
