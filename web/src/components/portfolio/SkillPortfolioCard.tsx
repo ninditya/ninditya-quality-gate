@@ -52,13 +52,32 @@ export default function SkillPortfolioCard({
 
         {/* Evidence */}
         {skill.evidence.length > 0 && (
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-testid="evidence">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Evidence from interview
             </span>
             <ul className="space-y-1">
               {skill.evidence.map((quote, i) => (
                 <li key={i} className="text-sm text-foreground">
+                  • "{quote}"
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Offered by the model as quotes, but the candidate did not say them */}
+        {(skill.unverified_evidence ?? []).length > 0 && (
+          <div className="space-y-1.5" data-testid="unverified-evidence">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Not found in the transcript
+            </span>
+            <p className="text-xs text-muted-foreground">
+              The AI offered these as quotes. The candidate's transcript does not contain them, so they are not evidence.
+            </p>
+            <ul className="space-y-1">
+              {skill.unverified_evidence.map((quote, i) => (
+                <li key={i} className="text-sm text-muted-foreground italic">
                   • "{quote}"
                 </li>
               ))}

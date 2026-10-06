@@ -25,4 +25,9 @@ class PortfolioSkill < ApplicationRecord
   def evidence_quotes
     Array(evidence)
   end
+
+  # "Quotes" the model offered that the candidate's transcript does not contain.
+  def unverified_quotes
+    Array(unverified_evidence)
+  end
 end

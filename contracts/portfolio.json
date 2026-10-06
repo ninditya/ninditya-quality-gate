@@ -14,7 +14,12 @@
         "is_discovered": false,
         "ai_level": 3,
         "ai_confidence": "high",
-        "evidence": ["We moved real-time data into local component state with useRef."],
+        "evidence": [
+          "We moved real-time data into local component state with useRef."
+        ],
+        "unverified_evidence": [
+          "I designed the whole state layer on my own."
+        ],
         "competency_summary": "Handles complex state management with clear tradeoff reasoning."
       },
       {
@@ -25,6 +30,7 @@
         "ai_level": null,
         "ai_confidence": "low",
         "evidence": [],
+        "unverified_evidence": [],
         "competency_summary": "Not assessed: this skill was not discussed in the interview."
       }
     ],

@@ -92,7 +92,8 @@ export interface PortfolioSkill {
   is_discovered: boolean;
   ai_level: number | null; // 1-5; null = not assessed
   ai_confidence: string;  // "high" | "medium" | "low"
-  evidence: string[];
+  evidence: string[]; // quotes found in the candidate's turns
+  unverified_evidence: string[]; // offered by the model as quotes, not found in the transcript
   competency_summary: string;
 }
 

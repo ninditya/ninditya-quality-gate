@@ -103,6 +103,44 @@ RSpec.describe Portfolios::Generator do
       .to eq([['Micro-frontend Architecture', 2, 'medium']])
   end
 
+  describe 'evidence quotes' do
+    def rate_react_with(*quotes)
+      skill = model_skill(react, level: 3, skill_id: 'sk-eng-001').merge('evidence' => quotes)
+      generate('configured_skills' => [skill])
+      stored(react)
+    end
+
+    it 'keeps as evidence only what the candidate said [AC-PF-07]' do
+      said     = 'We moved real-time data into local component state with useRef.'
+      invented = 'I architected the whole platform single-handedly.'
+
+      skill = rate_react_with(said, invented)
+
+      expect(skill.evidence).to eq([said])
+      expect(skill.unverified_evidence).to eq([invented])
+    end
+
+    it 'recognises a quote despite case, punctuation and spacing [AC-PF-07]' do
+      skill = rate_react_with('"we moved real-time data into  local component state, with useRef"')
+
+      expect(skill.evidence.size).to eq(1)
+      expect(skill.unverified_evidence).to be_empty
+    end
+
+    it 'accepts two things the candidate said joined by an ellipsis [AC-PF-07]' do
+      skill = rate_react_with('We moved real-time data ... with useRef')
+
+      expect(skill.evidence.size).to eq(1)
+    end
+
+    it 'does not accept the interviewer\'s words, or a fragment too short to check [AC-PF-07]' do
+      skill = rate_react_with('Tell me about a hard frontend project.', 'useRef.')
+
+      expect(skill.evidence).to be_empty
+      expect(skill.unverified_evidence.size).to eq(2)
+    end
+  end
+
   it 'keeps the previous ratings and overrides when regeneration fails [AC-PF-04]' do
     portfolio = create(:portfolio, session: session, generation_status: 'failed')
     rated     = create(:portfolio_skill, portfolio: portfolio, skill_label: react, ai_level: 3)
