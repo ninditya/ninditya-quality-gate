@@ -75,10 +75,11 @@
         "AC-PF-05",
         "AC-FG-02"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None. The schema cannot represent 'not assessed', so the code invents a level.",
-      "evidence": "api/spec/services/portfolio_generator_spec.rb"
+      "evidence": "api/spec/services/portfolio_generator_spec.rb",
+      "fix": "ai_level is nullable and never defaulted; the generator decides what is stored from the assessment and the coverage map; the web renders 'Not assessed'."
     },
     {
       "id": "R-06",
@@ -320,10 +321,11 @@
         "AC-FG-03",
         "AC-API-02"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "The result badge and the PDF export still show the comparison.",
-      "evidence": "web/src/components/fitgap/ComparisonTable.test.tsx; api/spec/requests/fit_gap_spec.rb"
+      "evidence": "web/src/components/fitgap/ComparisonTable.test.tsx; api/spec/requests/fit_gap_spec.rb",
+      "fix": "The API marks overrides (is_override) and the web reads expected_level, the field the API actually sends; both sides are pinned to contracts/fit_gap_report.json."
     },
     {
       "id": "R-23",

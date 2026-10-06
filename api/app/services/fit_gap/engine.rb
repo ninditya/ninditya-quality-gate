@@ -64,7 +64,9 @@ module FitGap
           expected_level:  expected_level,
           result:          result,
           delta:           delta,
-          confidence:      portfolio_skill&.dig(:confidence)
+          confidence:      portfolio_skill&.dig(:confidence),
+          # True when candidate_level is an assessor's rating, not the AI's.
+          is_override:     portfolio_skill ? portfolio_skill[:overridden] : false
         }
       end
 

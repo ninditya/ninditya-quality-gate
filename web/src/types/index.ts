@@ -127,13 +127,17 @@ export interface VacancySkill {
 
 export type SkillComparisonResult = "match" | "gap" | "exceed" | "not_assessed";
 
+// One row of contracts/fit_gap_report.json. The API names the vacancy's level
+// `expected_level`; candidate_level and delta are null for "not_assessed".
 export interface SkillComparison {
   skill_label: string;
-  required_level: number;
-  candidate_level?: number;
+  skill_id: string | null;
+  expected_level: number;
+  candidate_level: number | null;
   result: SkillComparisonResult;
-  delta?: number;
-  is_override?: boolean;
+  delta: number | null;
+  confidence: string | null;
+  is_override: boolean;
 }
 
 export interface FitGapReport {
