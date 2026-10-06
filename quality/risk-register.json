@@ -403,10 +403,11 @@
       "acs": [
         "AC-OPS-02"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None.",
-      "evidence": "web/package-lock.json was absent from the source."
+      "evidence": "web/package-lock.json was absent from the source.",
+      "fix": "web/package-lock.json is committed and CI installs with npm ci; a gate test fails if it goes missing or drifts from the manifest."
     },
     {
       "id": "R-28",
@@ -448,13 +449,16 @@
       "id": "R-31",
       "severity": "P3",
       "class": "built-wrong",
-      "title": "Setup papercuts: bin stubs are not executable; the READMEs disagree on the API port",
-      "impact": "New engineers: minutes lost.",
-      "acs": [],
-      "status": "open",
+      "title": "Setup does not work as documented: bin stubs are not executable, and the web app's default API address is a port the API does not listen on",
+      "impact": "New engineers: the documented commands fail and a default setup cannot reach the API.",
+      "acs": [
+        "AC-OPS-03"
+      ],
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "Use 'bundle exec'. The API port is 3001.",
-      "evidence": "api/bin; web/README.md; web/.env.example."
+      "evidence": "quality/gate/gate.test.mjs; found by running the net's own documented command",
+      "fix": "bin stubs carry the executable bit; the web defaults, .env.example and README name the API's real port; a gate test holds both."
     },
     {
       "id": "R-32",

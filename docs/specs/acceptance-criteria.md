@@ -38,6 +38,13 @@ Format: `### <id> — <title>`, then `Source`, `Status`, and Given/When/Then.
 - When dependencies are installed for a build
 - Then a committed lockfile fixes every version, and it matches the manifest
 
+### AC-OPS-03 — The documented setup works as written
+- Source: Derived
+- Status: enforced
+- Given a fresh checkout
+- When an engineer follows the READMEs
+- Then the scripts they are told to run are executable, and the web app's default API address is the one the API listens on
+
 ## Invitation
 
 ### AC-INV-01 — The invite link opens the interview page

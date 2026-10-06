@@ -11,6 +11,7 @@ import { checkTraceability } from "./traceability.mjs";
 import { checkRelease, notesFor, renderStatus } from "./release.mjs";
 import { forbiddenIn, DENYLIST } from "./confidentiality.mjs";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 
 const criteria = parseCriteria(`
 ### AC-FG-02 — Unrated skill is not assessed
@@ -193,6 +194,26 @@ test("the web lockfile exists and matches the manifest [AC-OPS-02]", () => {
   const lockRoot = JSON.parse(read("web/package-lock.json")).packages[""];
   assert.deepEqual(lockRoot.dependencies, manifest.dependencies);
   assert.deepEqual(lockRoot.devDependencies, manifest.devDependencies);
+});
+
+test("the documented setup works as written [AC-OPS-03]", () => {
+  // git records the executable bit. A script without it fails with "Permission
+  // denied" for whoever follows the README, which is how this was found.
+  const scripts = execFileSync("git", ["ls-files", "-s", "api/bin", "quality/snapshot.sh", "quality/fix.py"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  }).trim().split("\n");
+  assert.ok(scripts.length >= 5, "expected the bin stubs and the quality scripts to be tracked");
+  for (const line of scripts) assert.match(line, /^100755 /, `${line.split("\t")[1]} is not executable`);
+
+  // The web app's default API address must be the address the API listens on.
+  const apiPort = read("api/config/puma.rb").match(/ENV\.fetch\('PORT', (\d+)\)/)?.[1];
+  assert.ok(apiPort, "could not read the API's default port from api/config/puma.rb");
+  for (const file of ["web/.env.example", "web/src/services/api.ts", "web/README.md"]) {
+    const ports = [...read(file).matchAll(/localhost:(\d+)/g)].map((m) => m[1]).filter((p) => p !== "5173");
+    assert.ok(ports.length > 0, `${file} names no API address`);
+    assert.deepEqual([...new Set(ports)], [apiPort], `${file} points at a port the API does not listen on`);
+  }
 });
 
 test("the repository layout the gates rely on is present", () => {
