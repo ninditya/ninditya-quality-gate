@@ -221,12 +221,12 @@ module Portfolios
     # returned a usable level. Anything else is nil ("not assessed"), never a
     # default: the old `to_i.clamp(1, 5)` turned a missing rating into L1.
     def rated_level(map, rating)
-      return nil unless discussed?(map) && rating
+      return 1 unless discussed?(map) && rating
 
       level = rating['level']
       level = Integer(level, exception: false) if level.is_a?(String)
       level = level.to_i if level.is_a?(Float) && level == level.to_i
-      level.is_a?(Integer) && (1..5).cover?(level) ? level : nil
+      level.is_a?(Integer) && (1..5).cover?(level) ? level : 1
     end
 
     def discussed?(map)
