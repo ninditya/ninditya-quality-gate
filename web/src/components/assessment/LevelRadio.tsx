@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { LEVEL_LABELS } from "@/utils/constants";
@@ -11,6 +12,10 @@ interface LevelRadioProps {
 }
 
 export default function LevelRadio({ value, onChange, disabled, className }: LevelRadioProps) {
+  // Several pickers share a page. An id must be unique per picker, or a label
+  // click lands on the first picker that used it.
+  const groupId = useId();
+
   return (
     <RadioGroup
       value={value == null ? "" : String(value)}
@@ -20,8 +25,8 @@ export default function LevelRadio({ value, onChange, disabled, className }: Lev
     >
       {[1, 2, 3, 4, 5].map((level) => (
         <div key={level} className="flex items-center gap-1">
-          <RadioGroupItem value={String(level)} id={`level-${level}`} />
-          <Label htmlFor={`level-${level}`} className="cursor-pointer font-normal">
+          <RadioGroupItem value={String(level)} id={`${groupId}-level-${level}`} />
+          <Label htmlFor={`${groupId}-level-${level}`} className="cursor-pointer font-normal">
             {LEVEL_LABELS[level]}
           </Label>
         </div>

@@ -152,10 +152,11 @@
       "acs": [
         "AC-VAC-02"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "Clicking the radio circle instead of its label works.",
-      "evidence": "web/src/components/assessment/LevelRadio.test.tsx"
+      "evidence": "web/src/components/assessment/LevelRadio.test.tsx",
+      "fix": "Each level picker generates its own ids, so a label belongs to exactly one radio."
     },
     {
       "id": "R-11",
