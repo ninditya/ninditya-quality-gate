@@ -331,6 +331,15 @@ There was no channel for questions, so these are the calls I made.
    timestamp, with the names removed throughout. The API red baseline and the
    gates were re-run at the same commit in the new history and match what is
    recorded.
+9. **"The product" in the confidentiality rule means its brand name.** The
+   rule forbids naming the company, the product or any client. The code
+   describes what it does as an "AI interview" in about a hundred places across
+   37 files: a package name, a database schema, the page title. I read that as
+   a description and left it. The brief has me import the code as it stands,
+   and renaming a database schema to avoid a generic phrase would be a
+   behaviour change nobody specified. The gate's denylist therefore holds the
+   company's name and the client's. If the product has a brand name beyond
+   that phrase, I did not find it in the source.
 
 ## What I did not look at
 
