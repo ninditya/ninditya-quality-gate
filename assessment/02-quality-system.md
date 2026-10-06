@@ -78,6 +78,14 @@ request description ([template](../.github/pull_request_template.md)).
 plan is good. It checks that the inputs exist and connect to each other. A
 person still has to read them.
 
+**Red means it cannot merge.** A branch ruleset on `main` requires a pull
+request and a passing `quality-net` status, and its bypass list is empty. A
+pull request the net rejects cannot be merged by anyone, me included, and a
+direct push to `main` is refused. The ruleset went on after the bulk of the
+work, which the brief asks to be committed straight to `main`; from then on
+every change goes through a pull request, starting with the one that added
+this paragraph.
+
 ### The three blocks the brief asks for
 
 | Must block | What blocks it | Shown by |
@@ -92,7 +100,8 @@ person still has to read them.
   plausible request and exactly the change this net exists to stop: it
   restores R-05. One-line description, no spec, no criteria, no plan, no test.
   The Definition of Ready job fails with four reasons and the API suite fails
-  on `AC-PF-01` (6 of 55 checks red). Left open.
+  on `AC-PF-01` (6 of 55 checks red). Left open; GitHub shows its merge as
+  blocked.
 - **[#2](https://github.com/ninditya/ninditya-quality-gate/pull/2), passes.** "Only assessors can watch a live interview" (R-15). It
   cites `AC-SEC-06`, switches that criterion from deferred to enforced, adds
   the tagged check, states its plan and rollback, and marks the risk fixed in
@@ -279,9 +288,9 @@ Two consequences, stated so they are not surprises:
    a recorded transcript, and assertions for the six failure modes in PRD-01.
    It is the one check the product most needs and the only large gap in this
    net.
-2. **Branch protection** requiring `quality-net` and a second reviewer, which
-   turns "cannot go green" into "cannot merge" and supplies the second
-   signature the delivery model asks for.
+2. **A required second reviewer.** The ruleset on `main` already turns "cannot
+   go green" into "cannot merge". What it cannot supply while I work alone is
+   the second signature the delivery model asks for on every gate.
 3. **Fail-closed tenancy (R-14)**, so that the next forgotten scope returns
    nothing rather than everything.
 4. **Contract fixtures for the remaining responses**, starting with the ones
