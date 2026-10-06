@@ -1,0 +1,8 @@
+# Web suite — after the fixes, at the release candidate
+# cd web && npm run typecheck && npm test
+
+Test Files  7 passed (7)
+Tests  19 passed (19)
+
+
+typecheck: clean

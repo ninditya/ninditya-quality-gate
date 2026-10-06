@@ -1,0 +1,5 @@
+# API suite — after the fixes, at the release candidate
+# docker compose -f docker-compose.test.yml run --rm api-test
+
+58 examples, 0 failures
+

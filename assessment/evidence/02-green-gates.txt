@@ -1,0 +1,5 @@
+# Gates — after the fixes, at the release candidate
+
+# tests 23 # pass 23 # fail 0 
+PASS  Traceability: 34 enforced criteria each have a test; every test tag resolves
+PASS  Confidentiality: no forbidden company or client name in any tracked file or commit message
