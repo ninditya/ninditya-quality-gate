@@ -341,10 +341,11 @@
       "acs": [
         "AC-API-01"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None needed for users.",
-      "evidence": "api/spec/requests/write_honesty_spec.rb"
+      "evidence": "api/spec/requests/write_honesty_spec.rb",
+      "fix": "A catch-all route answers JSON 404 for any path the API does not serve."
     },
     {
       "id": "R-24",

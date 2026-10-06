@@ -61,4 +61,8 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  # Keep last. WebSocket paths never reach the router: they are handled by
+  # middleware before it.
+  match '*unmatched', to: 'errors#route_not_found', via: :all
 end
