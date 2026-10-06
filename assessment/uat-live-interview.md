@@ -37,7 +37,7 @@ cannot be run is recorded as not run, with the reason.
 | 1.4 | Let the interview run until the AI closes it, covering all three skills | The page shows "Wrapping up", then "Interview Complete" | auto-end |
 | 1.5 | Read the session row | `status = ended`, `end_reason = all_covered`, a duration | R-08 |
 | 1.6 | Open the portfolio | Three skills, each with a level, quotes and a summary. Confidence matches the rule: high needs three probes and "covered" | R-05, R-06 |
-| 1.7 | Compare each evidence quote with the transcript | Every quote is something the candidate said | R-13 (count the ones that are not) |
+| 1.7 | Compare each evidence quote with the transcript | Every quote under "Evidence" is something the candidate said. Count the ones under "Not found in the transcript": if most quotes land there, the match is too literal for how the model quotes | R-13 |
 | 1.8 | Run the fit/gap against the vacancy | Required and Candidate columns both filled; result per rule | R-22 |
 | 1.9 | Export the PDF | It opens, and matches the screen | export |
 
@@ -70,6 +70,8 @@ part checks them against the real one.
 | 3.6 | Turn the network off, then press End Interview | The page does not say "Interview Complete" unless the session is ended in the database | R-38 |
 | 3.7 | Say nothing at all for the whole time limit | Record what happens. The server is known not to enforce the limit in silence | R-18 (expected to fail; record it) |
 | 3.8 | Watch whether the AI ever says goodbye with a skill uncovered and time left | Record how often. The session now stays open in that case | R-26, and the open question in commit `1a88303` |
+| 3.9 | After the reconnect in 3.1, read the transcript end to end | No turn is missing or doubled; the portfolio shows no "transcript is incomplete" warning | R-35 |
+| 3.10 | Give thin answers on one skill, then move the conversation to another | The first skill stays "partial" on the monitor. Either the AI returns to it, or the interview ends on time with that skill at medium confidence. Record how long the interview ran | R-34 |
 
 ## Part 4 — Things nobody has decided
 
