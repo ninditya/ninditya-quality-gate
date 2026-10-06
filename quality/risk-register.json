@@ -373,10 +373,11 @@
       "acs": [
         "AC-AUTH-01"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "Retype and try again.",
-      "evidence": "web/src/services/api.test.ts"
+      "evidence": "web/src/services/api.test.ts",
+      "fix": "The 401 handler leaves a rejected login attempt to the form; it still signs out on a rejected session token."
     },
     {
       "id": "R-26",

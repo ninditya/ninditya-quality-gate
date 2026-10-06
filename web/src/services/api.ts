@@ -18,7 +18,9 @@ api.interceptors.request.use((config) => {
 });
 
 // Unwrap backend envelope: { data: { ... } } → { ... }
-// On 401/403, clear stored credentials and redirect to login.
+// On 401/403, clear stored credentials and redirect to login. A rejected
+// login attempt is the exception: the form is already on screen and shows its
+// own error, which a redirect would wipe.
 api.interceptors.response.use(
   (response) => {
     if (response.data && typeof response.data === "object" && "data" in response.data) {
@@ -27,7 +29,9 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    const status = error.response?.status;
+    const isLoginAttempt = error.config?.url?.endsWith("/auth/login");
+    if ((status === 401 || status === 403) && !isLoginAttempt) {
       clearToken();
       window.location.href = "/login";
     }
