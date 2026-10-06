@@ -114,17 +114,22 @@ module Api
 
       # POST /sessions/:token/audio_complete  — no JWT, invite token in URL
       # Called by the frontend when the audio queue drains after a preparing_to_end signal.
-      # Ends the session if all coverage is complete; idempotent if already ended.
+      # Ends an interview in progress; idempotent if already ended.
       def audio_complete
         session = Session.unscoped.find_by(invite_token: params[:token])
         return json_error("Invalid or expired invite token", :not_found) unless session
 
         return json_response(ended: true, message: "Session already ended") if session.ended?
 
-        # No coverage re-check here. The backend WS already verified all_covered
-        # before sending preparing_to_end. Re-checking here caused false negatives
-        # (timing gap between WS detection and HTTP call) that stalled auto-end.
-        Sessions::EndHandler.new(session).call(reason: 'all_covered')
+        # The invite token says "this is the candidate's link" and nothing more.
+        # An interview nobody joined has no closing audio to finish.
+        return json_error("Session has not started", :conflict) unless session.active?
+
+        # The session always ends here, so auto-end cannot stall. What is not
+        # taken on trust is the reason: this request cannot prove that all
+        # skills were covered, so the stored coverage and clock decide.
+        reason = Sessions::EndReason.automatic(session, otherwise: 'manual_candidate')
+        Sessions::EndHandler.new(session).call(reason: reason)
         json_response(ended: true, message: "Session ended")
       end
 

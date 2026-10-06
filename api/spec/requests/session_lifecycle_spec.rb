@@ -55,6 +55,27 @@ RSpec.describe 'Session lifecycle', type: :request do
 
       expect(session.reload.end_reason).to eq('all_covered')
     end
+
+    it 'records time_ceiling when the interview is wrapping up on time, not on coverage [AC-SES-02]' do
+      session = create(:session, :active, assessment: assessment, started_at: 44.minutes.ago - 30.seconds)
+      create(:coverage_map, session: session, skill_label: 'Communication', state: 'partial', probe_count: 2)
+
+      post "/api/v1/sessions/#{session.invite_token}/audio_complete"
+
+      expect(session.reload).to have_attributes(status: 'ended', end_reason: 'time_ceiling')
+    end
+
+    it 'does not count discovered skills towards all_covered [AC-SES-02]' do
+      session = create(:session, :active, assessment: assessment)
+      assessment.assessment_skills.each do |skill|
+        create(:coverage_map, session: session, skill_label: skill.skill_label, state: 'covered', probe_count: 3)
+      end
+      create(:coverage_map, session: session, skill_label: 'Kubernetes', is_discovered: true, state: 'initiated')
+
+      post "/api/v1/sessions/#{session.invite_token}/audio_complete"
+
+      expect(session.reload.end_reason).to eq('all_covered')
+    end
   end
 
   describe 'GET /sessions/:id/portfolio' do
@@ -65,6 +86,16 @@ RSpec.describe 'Session lifecycle', type: :request do
 
       expect(response).not_to have_http_status(:accepted)
       expect(json['status']).to eq('not_available')
+    end
+
+    it 'still reports "generating" while a portfolio is being generated' do
+      session = create(:session, :ended, assessment: assessment)
+      create(:portfolio, session: session, generation_status: 'generating', generated_at: nil)
+
+      get "/api/v1/sessions/#{session.id}/portfolio", headers: headers
+
+      expect(response).to have_http_status(:accepted)
+      expect(json['status']).to eq('generating')
     end
   end
 end

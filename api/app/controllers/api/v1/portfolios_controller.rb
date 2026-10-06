@@ -10,7 +10,14 @@ module Api
 
       # GET /api/v1/sessions/:id/portfolio
       def show
-        if @portfolio.nil? || @portfolio.generating?
+        # A portfolio row is created when the interview ends. Until then nothing
+        # is being generated, and saying so left the page waiting forever.
+        if @portfolio.nil?
+          return render json: { status: "not_available", message: "This session has no portfolio yet" },
+                        status: :not_found
+        end
+
+        if @portfolio.generating?
           return render json: { status: "generating" }, status: :accepted
         end
 

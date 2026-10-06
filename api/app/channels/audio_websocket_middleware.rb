@@ -602,11 +602,13 @@ class AudioWebSocketMiddleware
         ActiveRecord::Base.connection_pool.with_connection do
           if session.reload.ended?
             Rails.logger.info("[AudioWS] Session #{session.id} ended via audio_complete — closing WebSocket")
-            close_session_after_end(browser_ws, state, reason: 'all_covered')
+            close_session_after_end(browser_ws, state, reason: session.end_reason)
           elsif attempts >= max_attempts
             Rails.logger.warn("[AudioWS] audio_complete poll timed out — ending session #{session.id} directly")
-            Sessions::EndHandler.new(session).call(reason: 'all_covered')
-            close_session_after_end(browser_ws, state, reason: 'all_covered')
+            # Nobody ended it and neither rule holds: that is a fault, not a completion.
+            reason = Sessions::EndReason.automatic(session, otherwise: 'error')
+            Sessions::EndHandler.new(session).call(reason: reason)
+            close_session_after_end(browser_ws, state, reason: reason)
           else
             EM.schedule { poll_for_session_end(browser_ws, state, session, attempts: attempts + 1) }
           end

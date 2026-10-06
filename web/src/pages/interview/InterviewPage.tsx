@@ -106,12 +106,14 @@ export default function InterviewPage() {
       clearTimeout(audioCompleteSafetyTimerRef.current);
       audioCompleteSafetyTimerRef.current = null;
     }
-    // Retry until success — endpoint now always returns ended:true or an error.
-    // ended:false is no longer a valid response; any success means the session ended.
+    // Retry while the request fails to get through. A 4xx is an answer (bad link,
+    // interview not started), so repeating it would only loop forever.
     const attempt = async (delay: number) => {
       try {
         await sessionsApi.audioComplete(token);
-      } catch {
+      } catch (e: any) {
+        const status = e?.response?.status;
+        if (status >= 400 && status < 500) return;
         setTimeout(() => attempt(Math.min(delay * 2, 8000)), delay);
       }
     };

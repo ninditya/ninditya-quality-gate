@@ -17,6 +17,7 @@ export default function PortfolioPage() {
   const navigate = useNavigate();
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [overrides, setOverrides] = useState<Record<number, AssessorOverride>>({});
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
@@ -25,8 +26,18 @@ export default function PortfolioPage() {
   const [candidateName, setCandidateName] = useState<string | null>(null);
 
   const fetchPortfolio = useCallback(async () => {
-    const res = await sessionsApi.getPortfolio(Number(sessionId));
-    const data = res.data as any;
+    let data: any;
+    try {
+      data = (await sessionsApi.getPortfolio(Number(sessionId))).data;
+    } catch (e: any) {
+      // 404: the interview has not ended, so there is no portfolio to wait for.
+      if (e?.response?.status === 404) {
+        setUnavailable(true);
+        setGenerating(false);
+        return;
+      }
+      throw e;
+    }
     if (data.status === "generating" || data.portfolio?.generation_status === "generating" || data.portfolio?.generation_status === "pending") {
       setGenerating(true);
     } else if (data.portfolio) {
@@ -163,6 +174,15 @@ export default function PortfolioPage() {
               The AI is analyzing the interview transcript. This takes about 2 minutes.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* No portfolio: the interview has not ended */}
+      {unavailable && (
+        <div className="border rounded-lg p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            No portfolio yet. It is generated when the interview ends.
+          </p>
         </div>
       )}
 

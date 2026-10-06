@@ -120,10 +120,11 @@
         "AC-SES-01",
         "AC-SES-02"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None.",
-      "evidence": "api/spec/requests/session_lifecycle_spec.rb"
+      "evidence": "api/spec/requests/session_lifecycle_spec.rb",
+      "fix": "audio_complete refuses a session that never started (409) and records the end reason from stored coverage and time instead of assuming all_covered."
     },
     {
       "id": "R-09",
@@ -351,10 +352,11 @@
       "acs": [
         "AC-PF-06"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "Only reachable by URL today.",
-      "evidence": "api/spec/requests/session_lifecycle_spec.rb"
+      "evidence": "api/spec/requests/session_lifecycle_spec.rb",
+      "fix": "A session with no portfolio answers 404 not_available; the page says the interview has not ended."
     },
     {
       "id": "R-25",
