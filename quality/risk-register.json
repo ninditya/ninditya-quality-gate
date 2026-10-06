@@ -137,10 +137,11 @@
         "AC-ASM-01",
         "AC-VAC-01"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None from the UI.",
-      "evidence": "api/spec/requests/write_honesty_spec.rb; web/src/pages/vacancies/VacancyEditPage.test.tsx"
+      "evidence": "api/spec/requests/write_honesty_spec.rb; web/src/pages/vacancies/VacancyEditPage.test.tsx",
+      "fix": "On update the submitted skill list is the list: stored skills missing from it are removed. A request that omits the list leaves it untouched."
     },
     {
       "id": "R-10",

@@ -3,6 +3,8 @@
 module Api
   module V1
     class VacanciesController < ApiController
+      include SubmittedList
+
       authorize_auth_token! :assessor
 
       before_action :set_vacancy, only: %i[show update destroy]
@@ -36,7 +38,7 @@ module Api
 
       # PUT /api/v1/vacancies/:id
       def update
-        if @vacancy.update(vacancy_params)
+        if @vacancy.update(replacing_list(vacancy_params, :vacancy_skills_attributes, @vacancy.vacancy_skills))
           json_response(vacancy: vacancy_with_skills_json(@vacancy))
         else
           json_error(@vacancy.errors.full_messages.first, :unprocessable_entity)

@@ -71,6 +71,26 @@ RSpec.describe 'Write honesty', type: :request do
         .to eq([['React / Frontend Development', 4]])
     end
 
+    it 'keeps, changes, adds and removes in one save, as the form sends it [AC-ASM-01]' do
+      assessment = create(:assessment, :with_skills, organization: org)
+      react, comms, design = assessment.assessment_skills.order(:display_order).to_a
+      anchors = { l1_anchor: 'a', l2_anchor: 'b', l3_anchor: 'c', l4_anchor: 'd', l5_anchor: 'e' }
+
+      put "/api/v1/assessments/#{assessment.id}",
+          params: { assessment: { name: assessment.name, time_limit_min: 45,
+                                  assessment_skills_attributes: [
+                                    { id: design.id, skill_label: design.skill_label, display_order: 0 },
+                                    { id: react.id, skill_label: react.skill_label, expected_level: 5, display_order: 1 },
+                                    { skill_label: 'Incident Response', is_custom: true, display_order: 2, **anchors }
+                                  ] } },
+          headers: headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(assessment.reload.assessment_skills.order(:display_order).pluck(:skill_label, :expected_level))
+        .to eq([['System Design', 2], ['React / Frontend Development', 5], ['Incident Response', nil]])
+      expect(AssessmentSkill.exists?(comms.id)).to be(false)
+    end
+
     it 'leaves skills alone when the request does not mention them' do
       assessment = create(:assessment, :with_skills, organization: org)
 

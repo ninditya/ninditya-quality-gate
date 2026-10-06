@@ -3,6 +3,8 @@
 module Api
   module V1
     class AssessmentsController < ApiController
+      include SubmittedList
+
       authorize_auth_token! :assessor
 
       before_action :set_assessment, only: %i[show update destroy]
@@ -39,7 +41,9 @@ module Api
 
       # PUT /api/v1/assessments/:id
       def update
-        if @assessment.update(assessment_params)
+        attributes = replacing_list(assessment_params, :assessment_skills_attributes, @assessment.assessment_skills)
+
+        if @assessment.update(attributes)
           SystemPromptGeneratorWorker.perform_async(@assessment.id)
           json_response({ assessment: assessment_with_skills_json(@assessment), system_prompt_generated: true })
         else
