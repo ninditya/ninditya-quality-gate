@@ -125,6 +125,12 @@ class CoverageWebSocketMiddleware
   def authenticate_assessor_by_token(token, session_id)
     payload = JsonWebToken.decode(token)
 
+    # The same roles the HTTP API accepts for assessor routes. A signed token
+    # proves who the caller is, not that they may watch an interview.
+    unless AuthorizeApiRequest::ASSESSOR_ROLES.include?(payload[:role].to_s)
+      return [nil, 'Not permitted']
+    end
+
     org = Organization.find_by(scheme: payload[:scheme])
     return [nil, 'Invalid tenant'] unless org
 
