@@ -668,16 +668,46 @@ class AudioWebSocketMiddleware
     Rails.logger.error("[AudioWS] Coverage cache refresh failed: #{e.message}")
   end
 
+  TRANSCRIPT_WRITE_ATTEMPTS = 3
+
+  # The ratings are generated from the transcript, so a turn that cannot be
+  # stored must not vanish without a trace. A failed write is retried. If the
+  # turn is still not stored, the session is marked, and everything that shows
+  # the result says the transcript is incomplete.
   def save_transcript_turn(session, turn_number, speaker, text)
-    session.transcript_turns.create!(
-      turn_number: turn_number,
-      speaker: speaker,
-      text: text
-    )
-  rescue ActiveRecord::RecordNotUnique
-    # Duplicate turn — skip silently (idempotent)
+    attempts = 0
+    begin
+      attempts += 1
+      store_turn(session, turn_number, speaker, text)
+    rescue ActiveRecord::RecordNotUnique
+      taken = session.transcript_turns.find_by(turn_number: turn_number)
+      # The same words under the same number are a replay: already stored.
+      return if taken && taken.speaker == speaker && taken.text == text
+
+      # Different words: another connection of this session used the number
+      # first. This turn was still spoken, so it takes the next free number.
+      turn_number = session.transcript_turns.maximum(:turn_number).to_i + 1
+      retry if attempts < TRANSCRIPT_WRITE_ATTEMPTS
+      mark_transcript_incomplete(session, 'no free turn number after retrying')
+    rescue StandardError => e
+      retry if attempts < TRANSCRIPT_WRITE_ATTEMPTS
+      mark_transcript_incomplete(session, "#{e.class}: #{e.message}")
+    end
+  end
+
+  # In a transaction of its own, so a refused insert cannot poison a caller's.
+  def store_turn(session, turn_number, speaker, text)
+    TranscriptTurn.transaction(requires_new: true) do
+      session.transcript_turns.create!(turn_number: turn_number, speaker: speaker, text: text)
+    end
+  end
+
+  def mark_transcript_incomplete(session, why)
+    Rails.logger.error("[AudioWS] Transcript turn not stored for session #{session.id}: #{why}")
+    session.update_column(:transcript_incomplete, true)
   rescue StandardError => e
-    Rails.logger.error("[AudioWS] Failed to save transcript turn: #{e.message}")
+    # The hole in the turn numbering still shows it (Session#transcript_complete?).
+    Rails.logger.error("[AudioWS] Could not record the missing turn for session #{session.id}: #{e.message}")
   end
 
   def check_time_ceiling(session, state, browser_ws)

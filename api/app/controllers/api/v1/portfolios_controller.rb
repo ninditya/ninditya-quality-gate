@@ -187,6 +187,8 @@ module Api
           generation_status: portfolio.generation_status,
           generated_at:      portfolio.generated_at,
           generation_error:  portfolio.generation_error,
+          # Ratings come from the transcript. If part of it was not stored, say so.
+          transcript_complete: portfolio.session.transcript_complete?,
           skills:            portfolio.portfolio_skills.map(&method(:portfolio_skill_json)),
           overrides:         portfolio.assessor_overrides.map(&method(:override_json))
         }

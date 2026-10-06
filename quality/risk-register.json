@@ -501,15 +501,20 @@
     },
     {
       "id": "R-35",
-      "severity": "P2",
+      "severity": "P1",
       "class": "built-wrong",
-      "title": "Transcript turns are written on background threads and write errors are swallowed",
+      "title": "A transcript turn that fails to store is logged and dropped, and a turn whose number is already taken is discarded",
       "impact": "Hiring managers: a transcript can be missing turns with no signal, and ratings are generated from it.",
-      "acs": [],
-      "status": "open",
+      "acs": [
+        "AC-TR-01",
+        "AC-TR-02"
+      ],
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "Errors are logged.",
-      "evidence": "By reading api/app/channels/audio_websocket_middleware.rb (save_transcript_turn)."
+      "evidence": "api/spec/channels/audio_websocket_transcript_spec.rb; web/src/pages/portfolio/PortfolioPage.test.tsx",
+      "rerated": "P2 -> P1 on re-reading the severity scale: silently losing part of the transcript the ratings are generated from is a data-integrity issue, and the scale puts any of those at P1 or above.",
+      "fix": "A failed write is retried; a turn whose number is taken by different words gets the next number; a turn that still cannot be stored marks the session, and a hole in the numbering counts too. The portfolio, the page and the PDF say the transcript is incomplete."
     },
     {
       "id": "R-36",

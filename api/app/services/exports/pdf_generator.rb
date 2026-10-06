@@ -48,6 +48,14 @@ module Exports
         pdf.text "Generated: #{Time.current.strftime('%Y-%m-%d %H:%M')}"
       end
 
+      unless @session.transcript_complete?
+        pdf.move_down 4
+        pdf.font_size(10) do
+          pdf.text 'Transcript incomplete: at least one turn of this interview was not stored. ' \
+                   'Treat the ratings below as provisional.', style: :bold
+        end
+      end
+
       pdf.stroke_horizontal_rule
       pdf.move_down 10
     end

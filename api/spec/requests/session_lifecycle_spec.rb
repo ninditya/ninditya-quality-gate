@@ -88,6 +88,29 @@ RSpec.describe 'Session lifecycle', type: :request do
       expect(json['status']).to eq('not_available')
     end
 
+    it 'says so when the transcript the ratings came from is incomplete [AC-TR-01]' do
+      session   = create(:session, :ended, assessment: assessment, transcript_incomplete: true)
+      portfolio = create(:portfolio, session: session)
+
+      get "/api/v1/sessions/#{session.id}/portfolio", headers: headers
+      expect(json.dig('portfolio', 'transcript_complete')).to be(false)
+
+      get "/api/v1/portfolios/#{portfolio.id}/export", params: { format: 'pdf' }, headers: headers
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to start_with('%PDF')
+    end
+
+    it 'reports a complete transcript as complete' do
+      session = create(:session, :ended, assessment: assessment)
+      create(:portfolio, session: session)
+      create(:transcript_turn, session: session, turn_number: 1)
+      create(:transcript_turn, session: session, turn_number: 2, speaker: 'ai', text: 'Go on.')
+
+      get "/api/v1/sessions/#{session.id}/portfolio", headers: headers
+
+      expect(json.dig('portfolio', 'transcript_complete')).to be(true)
+    end
+
     it 'still reports "generating" while a portfolio is being generated' do
       session = create(:session, :ended, assessment: assessment)
       create(:portfolio, session: session, generation_status: 'generating', generated_at: nil)
