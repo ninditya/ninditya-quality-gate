@@ -10,10 +10,11 @@
       "acs": [
         "AC-OPS-01"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None until fixed. Development and test never eager-load, so nobody saw it.",
-      "evidence": "api/spec/boot_spec.rb"
+      "evidence": "api/spec/boot_spec.rb",
+      "fix": "Declared the two WebSocket middleware names to the autoloader (config/initializers/zeitwerk.rb)."
     },
     {
       "id": "R-02",
