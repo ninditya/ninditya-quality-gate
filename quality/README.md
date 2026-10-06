@@ -35,7 +35,8 @@ node quality/gate/release.mjs --tag v1.0.0 --net success
 | `api/spec/requests/tenant_isolation_spec.rb`, `tenant_scoping_guard_spec.rb` | One tenant reading or changing another's results; the next unscoped lookup | Tenancy in workers and sockets (R-14) |
 | `api/spec/services/portfolio_generator_spec.rb` | Model output becoming stored ratings without checks: invented levels, dropped skills, trusted confidence, partial writes | Whether the model's ratings are *good* (R-12) |
 | `api/spec/requests/fit_gap_spec.rb` | Wrong or stale comparisons reaching a hiring decision | Narrative text quality |
-| `api/spec/requests/session_lifecycle_spec.rb`, `spec/channels/` | Sessions ended, mislabelled or killed for the wrong reason | Audio, the live model connection (R-12) |
+| `api/spec/requests/session_lifecycle_spec.rb`, `spec/channels/audio_websocket_*` | Sessions ended, mislabelled or killed for the wrong reason | Audio, the live model connection (R-12) |
+| `api/spec/channels/coverage_websocket_auth_spec.rb` | Someone who is not an assessor watching a live interview | — |
 | `api/spec/requests/write_honesty_spec.rb` | A success response for a write that did not happen | — |
 | `contracts/` + `contract_spec.rb` + web component tests | The web and the API drifting apart on a field name or type | Endpoints with no fixture yet |
 | `web/src/pages/interview/*.test.tsx`, `hooks/useAudioWebSocket.test.ts` | Telling a candidate a failed interview is complete | Browser audio capture and playback |
@@ -43,6 +44,7 @@ node quality/gate/release.mjs --tag v1.0.0 --net success
 | `quality/gate/traceability.mjs` | A requirement nobody tests; a test nobody asked for; a silent "we skipped that" | — |
 | `quality/gate/release.mjs` | Shipping with an open P0/P1 or an undisclosed risk | Deploying: it gates the tag, not the cluster (R-28) |
 | `quality/gate/confidentiality.mjs` | Naming the company or a client in a public repo | Images and binaries |
+| `quality/gate/gate.test.mjs` | A gate that has stopped blocking; a lockfile that drifted from the manifest; a documented command that does not run | — |
 
 ## Extend it
 
