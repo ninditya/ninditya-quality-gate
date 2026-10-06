@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_10_06_000003) do
+ActiveRecord::Schema[7.0].define(version: 2026_10_06_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -145,6 +145,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_10_06_000003) do
     t.datetime "created_at", default: -> { "now()" }, null: false
     t.string "candidate_name", limit: 255
     t.string "audio_connection_id", limit: 32
+    t.boolean "transcript_incomplete", default: false, null: false
     t.index ["assessment_id"], name: "index_sessions_on_assessment_id"
     t.index ["candidate_id"], name: "index_sessions_on_candidate_id"
     t.index ["invite_token"], name: "idx_sessions_invite_token", unique: true

@@ -206,6 +206,14 @@ export default function PortfolioPage() {
       {/* Ready state */}
       {!generating && portfolio?.generation_status === "complete" && (
         <>
+          {/* The ratings were generated from the transcript; a hole in it has to be said */}
+          {portfolio.transcript_complete === false && (
+            <div role="alert" className="text-sm bg-amber-50 border border-amber-300 text-amber-900 rounded-lg px-4 py-3">
+              <strong>The transcript is incomplete.</strong> At least one turn of this interview was not stored, and
+              the ratings below were generated without it. Treat them as provisional.
+            </div>
+          )}
+
           {/* Configured skills */}
           <div className="space-y-3">
             <h2 className="text-sm font-semibold">Configured Skills</h2>

@@ -202,6 +202,22 @@ Format: `### <id> — <title>`, then `Source`, `Status`, and Given/When/Then.
 - When the page shows its final state
 - Then the end was reported to the API by another route, or the page says the interview was not completed
 
+## Transcript
+
+### AC-TR-01 — A transcript with a missing turn says so
+- Source: Derived (PRD-01 §5 generates every rating from the transcript; no document says what happens when a turn cannot be stored)
+- Status: enforced
+- Given an interview in which a turn could not be stored
+- When the write still fails after retrying, or the stored turns have a hole in their numbering
+- Then the session is marked as having an incomplete transcript, and the portfolio and its export say so
+
+### AC-TR-02 — Two connections never cost a turn
+- Source: Derived
+- Status: enforced
+- Given two connections of one session that give different turns the same number
+- When both are stored
+- Then both turns are in the transcript; only an exact replay of a stored turn is skipped
+
 ## Portfolio
 
 ### AC-PF-01 — A skill that was not assessed has no level

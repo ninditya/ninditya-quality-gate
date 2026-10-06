@@ -31,6 +31,16 @@ class Session < ApplicationRecord
     "#{self.class.web_base_url}/interview/#{invite_token}"
   end
 
+  # False once a turn is known to be missing: a write that failed for good, or
+  # a hole in the numbering. Turn numbers are handed out in order as people
+  # speak, so a hole is a turn that was spoken and never stored.
+  def transcript_complete?
+    return false if transcript_incomplete
+
+    numbers = transcript_turns.pluck(:turn_number)
+    numbers.empty? || numbers.size == numbers.max - numbers.min + 1
+  end
+
   def self.web_base_url
     ENV.fetch('WEB_BASE_URL', 'http://localhost:5173').chomp('/')
   end

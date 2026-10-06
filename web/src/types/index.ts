@@ -81,6 +81,7 @@ export interface Portfolio {
   generation_status: "pending" | "generating" | "complete" | "failed";
   generated_at?: string;
   generation_error?: string;
+  transcript_complete: boolean; // false: a turn of the interview was not stored
   skills: PortfolioSkill[];
   overrides: AssessorOverride[];
 }
