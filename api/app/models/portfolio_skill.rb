@@ -12,9 +12,14 @@ class PortfolioSkill < ApplicationRecord
   }
 
   validates :skill_label, presence: true
-  validates :ai_level, numericality: { only_integer: true, in: 1..5 }
+  # nil means "not assessed". It is never defaulted to a level.
+  validates :ai_level, numericality: { only_integer: true, in: 1..5 }, allow_nil: true
   validates :ai_confidence, inclusion: { in: CONFIDENCE_LEVELS }
   validates :competency_summary, presence: true
+
+  def assessed?
+    !ai_level.nil?
+  end
 
   # evidence is stored as JSONB array of quote strings
   def evidence_quotes

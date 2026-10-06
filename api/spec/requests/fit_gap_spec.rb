@@ -36,14 +36,41 @@ RSpec.describe 'Fit/gap report', type: :request do
   end
 
   it 'reports an unrated skill as not assessed, never as a gap [AC-FG-02]' do
-    unrated = build(:portfolio_skill, portfolio: portfolio, skill_label: 'Communication', ai_level: nil)
-    unrated.save!(validate: false) if PortfolioSkill.columns_hash['ai_level'].null
+    create(:portfolio_skill, portfolio: portfolio, skill_label: 'Communication', ai_level: nil,
+                             ai_confidence: 'low', evidence: [])
     create(:vacancy_skill, vacancy: vacancy, skill_label: 'Communication', expected_level: 3)
 
     report = run_engine
 
-    expect(PortfolioSkill.where(portfolio: portfolio, skill_label: 'Communication')).to exist
     expect(comparison(report, 'Communication')).to include('result' => 'not_assessed', 'candidate_level' => nil)
+  end
+
+  it 'uses an assessor rating for a skill the AI could not assess [AC-FG-02]' do
+    unrated = create(:portfolio_skill, portfolio: portfolio, skill_label: 'Communication', ai_level: nil,
+                                       ai_confidence: 'low', evidence: [])
+    create(:vacancy_skill, vacancy: vacancy, skill_label: 'Communication', expected_level: 3)
+
+    post "/api/v1/portfolio_skills/#{unrated.id}/override",
+         params: { override: { override_level: 3, assessor_notes: 'Assessed in a follow-up call.' } },
+         headers: headers, as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(json.dig('override', 'ai_level')).to be_nil
+    expect(comparison(run_engine, 'Communication')).to include('result' => 'match', 'candidate_level' => 3)
+  end
+
+  it 'exports a PDF for a portfolio that has an unassessed skill [AC-PF-01]' do
+    create(:portfolio_skill, portfolio: portfolio, skill_label: 'Communication', ai_level: nil,
+                             ai_confidence: 'low', evidence: [])
+    create(:vacancy_skill, vacancy: vacancy, skill_label: 'Communication', expected_level: 3)
+    run_engine
+
+    get "/api/v1/portfolios/#{portfolio.id}/export",
+        params: { format: 'pdf', vacancy_id: vacancy.id }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.media_type).to eq('application/pdf')
+    expect(response.body).to start_with('%PDF')
   end
 
   it 'marks a level that came from a human override [AC-FG-03]' do

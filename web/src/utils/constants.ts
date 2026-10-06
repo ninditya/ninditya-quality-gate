@@ -1,11 +1,14 @@
 export const TIME_LIMIT_OPTIONS = [10, 30, 45, 60, 90] as const;
 
-/** Parse "L3" → 3, passthrough number, fallback to 1 */
-export function parseLevel(level: string | number): number {
+/** Parse "L3" → 3, passthrough number. No level stays null: unknown is never L1. */
+export function parseLevel(level: string | number | null | undefined): number | null {
   if (typeof level === "number") return level;
+  if (level == null) return null;
   const n = parseInt(level.replace(/\D/g, ""), 10);
-  return isNaN(n) ? 1 : n;
+  return isNaN(n) ? null : n;
 }
+
+export const NOT_ASSESSED_LABEL = "Not assessed";
 
 export const LEVEL_LABELS: Record<number, string> = {
   1: "L1",

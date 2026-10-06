@@ -89,10 +89,11 @@
       "acs": [
         "AC-PF-03"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None.",
-      "evidence": "api/spec/services/portfolio_generator_spec.rb"
+      "evidence": "api/spec/services/portfolio_generator_spec.rb",
+      "fix": "Confidence is computed from the coverage map by the PRD rule; the model's own confidence is ignored."
     },
     {
       "id": "R-07",
@@ -288,10 +289,11 @@
       "acs": [
         "AC-PF-04"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None.",
-      "evidence": "api/spec/services/portfolio_generator_spec.rb"
+      "evidence": "api/spec/services/portfolio_generator_spec.rb",
+      "fix": "Regeneration replaces skills inside one transaction; a failure restores the previous ratings and overrides."
     },
     {
       "id": "R-21",

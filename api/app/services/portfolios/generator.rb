@@ -13,7 +13,15 @@ module Portfolios
       )
     end
 
+    NOT_DISCUSSED = 'Not assessed: this skill was not discussed in the interview.'
+    NOT_RATEABLE  = 'Not assessed: the interview did not produce enough evidence to rate this skill.'
+
     # Returns the Portfolio record with skills populated.
+    #
+    # The model's answer is treated as untrusted input. What is stored is decided
+    # here: which skills exist (the assessment's), whether a skill was assessed
+    # at all (the coverage map), and how confident the rating is (the PRD rule).
+    # The model only supplies the level, the evidence and the summary.
     def call
       portfolio = @session.portfolio || @session.create_portfolio!(
         candidate_id:      @session.candidate_id,
@@ -22,16 +30,21 @@ module Portfolios
 
       portfolio.update!(generation_status: 'generating')
 
-      prompt   = build_prompt
-      response = @gemini_client.generate_content(prompt, temperature: 0.2)
+      # No candidate speech means there is nothing to rate, so the model is not
+      # asked to: it would answer anyway.
+      ratings = candidate_spoke? ? parse(@gemini_client.generate_content(build_prompt, temperature: 0.2)) : {}
 
-      save_skills(portfolio, response)
-      portfolio.update!(generation_status: 'complete', generated_at: Time.current)
+      # All or nothing. A failure part-way must not leave the portfolio with
+      # half its skills, or with the previous ratings and overrides destroyed.
+      Portfolio.transaction do
+        save_skills(portfolio, ratings)
+        portfolio.update!(generation_status: 'complete', generated_at: Time.current, generation_error: nil)
+      end
 
       Rails.logger.info("[N10] Portfolio generated for session #{@session.id}")
       portfolio
     rescue => e
-      portfolio&.update!(generation_status: 'failed', generation_error: e.message)
+      portfolio&.reload&.update!(generation_status: 'failed', generation_error: e.message)
       Rails.logger.error("[N10] Portfolio generation failed for session #{@session.id}: #{e.class} #{e.message}")
       raise
     end
@@ -89,6 +102,8 @@ module Portfolios
            Compare the candidate's actual behavior to the L1-L5 anchors.
            Assign the highest level where you see CONSISTENT evidence, not just one strong moment.
            If evidence is mixed (mostly L2 with one L3 moment), assign L2.
+           If a skill was not discussed, or the transcript holds no evidence for it, set "level" to null.
+           Never guess a level: null is the correct answer when you cannot tell.
 
         3. WRITE THE COMPETENCY SUMMARY
            2-3 sentences. Focus on patterns, not individual answers.
@@ -147,35 +162,99 @@ module Portfolios
       }
     end
 
-    def save_skills(portfolio, response)
-      data = response.is_a?(Hash) ? response : JSON.parse(response)
+    def candidate_spoke?
+      @session.transcript_turns.where(speaker: 'candidate').exists?
+    end
 
-      # Destroy existing skills (idempotent regeneration)
+    def parse(response)
+      data = response.is_a?(Hash) ? response : JSON.parse(response)
+      raise ArgumentError, 'Model returned no skill ratings object' unless data.is_a?(Hash)
+
+      data
+    end
+
+    def save_skills(portfolio, ratings)
+      # Destroy existing skills (idempotent regeneration). Inside the caller's
+      # transaction, so a failure below restores them and their overrides.
       portfolio.portfolio_skills.destroy_all
 
-      (data['configured_skills'] || []).each do |skill_data|
-        portfolio.portfolio_skills.create!(
-          skill_id:           skill_data['skill_id'],
-          skill_label:        skill_data['skill_label'],
-          is_discovered:      false,
-          ai_level:           skill_data['level'].to_i.clamp(1, 5),
-          ai_confidence:      skill_data['confidence'],
-          evidence:           Array(skill_data['evidence']).first(3),
-          competency_summary: skill_data['competency_summary']
+      maps       = @session.coverage_maps.to_a
+      configured = @session.assessment.assessment_skills.order(:display_order).to_a
+
+      # Every configured skill gets a row, whether or not the model mentioned it.
+      configured.each do |skill|
+        create_skill(
+          portfolio,
+          skill_id: skill.skill_id, label: skill.skill_label, discovered: false,
+          map:    find_entry(maps.reject(&:is_discovered), skill.skill_id, skill.skill_label, :skill_id, :skill_label),
+          rating: find_entry(Array(ratings['configured_skills']), skill.skill_id, skill.skill_label,
+                             'skill_id', 'skill_label')
         )
       end
 
-      (data['discovered_skills'] || []).each do |skill_data|
-        portfolio.portfolio_skills.create!(
-          skill_id:           nil,
-          skill_label:        skill_data['skill_label'],
-          is_discovered:      true,
-          ai_level:           skill_data['level'].to_i.clamp(1, 5),
-          ai_confidence:      skill_data['confidence'],
-          evidence:           Array(skill_data['evidence']).first(3),
-          competency_summary: skill_data['competency_summary']
-        )
+      # A discovered skill is one the coverage map tracked during the interview.
+      # One the model introduces only now has no coverage behind it and is dropped.
+      Array(ratings['discovered_skills']).each do |rating|
+        label = rating['skill_label'].to_s.strip
+        map   = find_entry(maps.select(&:is_discovered), nil, label, :skill_id, :skill_label)
+        next if map.nil? || configured.any? { |skill| same_label?(skill.skill_label, label) }
+
+        create_skill(portfolio, skill_id: nil, label: map.skill_label, discovered: true, map: map, rating: rating)
       end
+    end
+
+    def create_skill(portfolio, skill_id:, label:, discovered:, map:, rating:)
+      level = rated_level(map, rating)
+
+      portfolio.portfolio_skills.create!(
+        skill_id:           skill_id,
+        skill_label:        label,
+        is_discovered:      discovered,
+        ai_level:           level,
+        ai_confidence:      confidence_for(map, level),
+        evidence:           level ? Array(rating['evidence']).map(&:to_s).reject(&:blank?).first(3) : [],
+        competency_summary: level ? rating['competency_summary'] : (discussed?(map) ? NOT_RATEABLE : NOT_DISCUSSED)
+      )
+    end
+
+    # A level is stored only when the skill was actually discussed AND the model
+    # returned a usable level. Anything else is nil ("not assessed"), never a
+    # default: the old `to_i.clamp(1, 5)` turned a missing rating into L1.
+    def rated_level(map, rating)
+      return nil unless discussed?(map) && rating
+
+      level = rating['level']
+      level = Integer(level, exception: false) if level.is_a?(String)
+      level = level.to_i if level.is_a?(Float) && level == level.to_i
+      level.is_a?(Integer) && (1..5).cover?(level) ? level : nil
+    end
+
+    def discussed?(map)
+      map.present? && map.state != 'not_yet' && map.probe_count.positive?
+    end
+
+    # PRD 01 section 5, evaluated here rather than requested from the model:
+    #   high   — probe_count >= 3 AND state = covered
+    #   medium — probe_count = 2 OR state = partial
+    #   low    — everything else
+    def confidence_for(map, level)
+      return 'low' if level.nil? || map.nil?
+      return 'high' if map.probe_count >= 3 && map.state == 'covered'
+      return 'medium' if map.probe_count == 2 || map.state == 'partial'
+
+      'low'
+    end
+
+    # Matches by skill id when both sides have one, otherwise by label.
+    def find_entry(entries, skill_id, label, id_key, label_key)
+      read = ->(entry, key) { entry.respond_to?(:[]) && !entry.is_a?(ActiveRecord::Base) ? entry[key] : entry.public_send(key) }
+
+      (skill_id.present? && entries.find { |e| read.call(e, id_key).to_s == skill_id.to_s }) ||
+        entries.find { |e| same_label?(read.call(e, label_key), label) }
+    end
+
+    def same_label?(left, right)
+      left.to_s.strip.casecmp?(right.to_s.strip)
     end
   end
 end

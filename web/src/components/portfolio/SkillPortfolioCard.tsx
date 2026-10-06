@@ -18,6 +18,8 @@ export default function SkillPortfolioCard({
   onOverrideSaved,
 }: SkillPortfolioCardProps) {
   const effectiveLevel = override?.override_level ?? parseLevel(skill.ai_level);
+  // Confidence describes the AI's rating; with no rating there is nothing to qualify.
+  const aiAssessed = skill.ai_level != null;
 
   return (
     <Card>
@@ -35,14 +37,14 @@ export default function SkillPortfolioCard({
                   </span>
                 )}
               </div>
-              <ConfidenceIndicator confidence={skill.ai_confidence} />
+              {aiAssessed && <ConfidenceIndicator confidence={skill.ai_confidence} />}
             </div>
           </div>
           <OverridePanel skill={skill} existingOverride={override} onSaved={onOverrideSaved} />
         </div>
 
         {/* Low confidence note */}
-        {skill.ai_confidence?.toLowerCase() === "low" && (
+        {aiAssessed && skill.ai_confidence?.toLowerCase() === "low" && (
           <div className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded px-3 py-2">
             Only briefly explored. Confidence is low — warrants a dedicated session if this skill matters.
           </div>

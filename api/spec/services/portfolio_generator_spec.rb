@@ -78,6 +78,31 @@ RSpec.describe Portfolios::Generator do
     expect(stored(comms).ai_confidence).to eq('low')   # initiated, 1 probe
   end
 
+  it 'treats a level outside L1-L5 as not assessed rather than clamping it [AC-PF-01]' do
+    generate('configured_skills' => [
+               model_skill(react, level: 9, skill_id: 'sk-eng-001'),
+               model_skill(comms, level: 0)
+             ])
+
+    expect(stored(react).ai_level).to be_nil
+    expect(stored(comms).ai_level).to be_nil
+  end
+
+  it 'keeps a discovered skill only when the coverage map tracked it [AC-PF-02]' do
+    create(:coverage_map, session: session, skill_label: 'Micro-frontend Architecture',
+                          is_discovered: true, state: 'partial', probe_count: 2)
+
+    generate('configured_skills' => [model_skill(react, level: 3, skill_id: 'sk-eng-001')],
+             'discovered_skills' => [
+               model_skill('Micro-frontend Architecture', level: 2, confidence: 'high'),
+               model_skill('Kubernetes', level: 4, confidence: 'high')
+             ])
+
+    discovered = session.reload.portfolio.portfolio_skills.where(is_discovered: true)
+    expect(discovered.pluck(:skill_label, :ai_level, :ai_confidence))
+      .to eq([['Micro-frontend Architecture', 2, 'medium']])
+  end
+
   it 'keeps the previous ratings and overrides when regeneration fails [AC-PF-04]' do
     portfolio = create(:portfolio, session: session, generation_status: 'failed')
     rated     = create(:portfolio_skill, portfolio: portfolio, skill_label: react, ai_level: 3)
