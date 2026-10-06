@@ -201,6 +201,7 @@ module Api
           ai_level:          skill.ai_level,
           ai_confidence:     skill.ai_confidence,
           evidence:          skill.evidence_quotes,
+          unverified_evidence: skill.unverified_quotes,
           competency_summary: skill.competency_summary
         }
       end

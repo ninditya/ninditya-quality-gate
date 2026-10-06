@@ -248,10 +248,10 @@ Format: `### <id> — <title>`, then `Source`, `Status`, and Given/When/Then.
 
 ### AC-PF-07 — Evidence quotes are things the candidate said
 - Source: PRD-01 §5 ("quotes from the CANDIDATE")
-- Status: deferred (R-13)
+- Status: enforced
 - Given the evidence the model returns for a skill
 - When a quote does not appear in the candidate's turns
-- Then it is not presented as evidence
+- Then it is not stored or shown as evidence; it is kept apart and labelled as not found in the transcript
 
 ## Fit/gap
 

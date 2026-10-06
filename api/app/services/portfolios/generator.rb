@@ -205,16 +205,47 @@ module Portfolios
 
     def create_skill(portfolio, skill_id:, label:, discovered:, map:, rating:)
       level = rated_level(map, rating)
+      said, not_said = level ? sort_quotes(rating['evidence']) : [[], []]
 
       portfolio.portfolio_skills.create!(
-        skill_id:           skill_id,
-        skill_label:        label,
-        is_discovered:      discovered,
-        ai_level:           level,
-        ai_confidence:      confidence_for(map, level),
-        evidence:           level ? Array(rating['evidence']).map(&:to_s).reject(&:blank?).first(3) : [],
-        competency_summary: level ? rating['competency_summary'] : (discussed?(map) ? NOT_RATEABLE : NOT_DISCUSSED)
+        skill_id:            skill_id,
+        skill_label:         label,
+        is_discovered:       discovered,
+        ai_level:            level,
+        ai_confidence:       confidence_for(map, level),
+        evidence:            said.first(3),
+        unverified_evidence: not_said.first(3),
+        competency_summary:  level ? rating['competency_summary'] : (discussed?(map) ? NOT_RATEABLE : NOT_DISCUSSED)
       )
+    end
+
+    # PRD 01 section 5: evidence is quotes from the candidate. The model is asked
+    # for quotes and sometimes writes its own. A quote counts as evidence only if
+    # the candidate's turns contain it. Anything else is kept, apart, so that it
+    # is never presented as something the candidate said.
+    def sort_quotes(quotes)
+      Array(quotes).map(&:to_s).reject(&:blank?).partition { |quote| candidate_said?(quote) }
+    end
+
+    # An ellipsis joins two things that were said; each part has to be found. A
+    # part shorter than two words is too little to check and proves nothing.
+    def candidate_said?(quote)
+      parts = quote.split(/\.{3,}|…/).map { |part| normalize(part) }.reject(&:empty?)
+      return false if parts.empty? || parts.any? { |part| part.split.size < 2 }
+
+      parts.all? { |part| candidate_speech.include?(" #{part} ") }
+    end
+
+    def candidate_speech
+      @candidate_speech ||= begin
+        turns = @session.transcript_turns.where(speaker: 'candidate').order(:turn_number).pluck(:text)
+        " #{normalize(turns.join(' '))} "
+      end
+    end
+
+    # A transcript and a quotation of it differ in case, punctuation and spacing.
+    def normalize(text)
+      text.to_s.downcase.gsub(/[^[:alnum:]]+/, ' ').strip
     end
 
     # A level is stored only when the skill was actually discussed AND the model

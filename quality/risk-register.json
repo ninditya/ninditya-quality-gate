@@ -189,17 +189,19 @@
     },
     {
       "id": "R-13",
-      "severity": "P2",
-      "class": "missing-spec",
+      "severity": "P1",
+      "class": "built-wrong",
       "title": "Evidence quotes are not checked against the transcript",
       "impact": "Hiring managers: a quote the model invented would be shown as 'Evidence from interview'.",
       "acs": [
         "AC-PF-07"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Product owner (to be named at G2 sign-off)",
       "mitigation": "The transcript is one click away for cross-checking. Measure the invention rate during the R-12 run before choosing a rule.",
-      "evidence": "By reading api/app/services/portfolios/generator.rb; not observed, no model access."
+      "evidence": "api/spec/services/portfolio_generator_spec.rb; web/src/components/portfolio/SkillPortfolioCard.test.tsx",
+      "fix": "Each quote is checked against the candidate's turns. What the candidate did not say is stored apart (unverified_evidence) and shown as 'Not found in the transcript', never as evidence.",
+      "rerated": "P2 -> P1 on re-reading the severity scale: a fabricated quote attributed to a candidate is a data-integrity issue, and the scale puts any of those at P1 or above. Class corrected too: PRD-01 section 5 does say quotes are the candidate's."
     },
     {
       "id": "R-14",
