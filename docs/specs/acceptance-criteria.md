@@ -188,6 +188,13 @@ Format: `### <id> — <title>`, then `Source`, `Status`, and Given/When/Then.
 - When the page shows its final state
 - Then it reports a failure and what to do next, not completion
 
+### AC-INT-03 — Ending an interview is reported as complete only once the server recorded it
+- Source: Derived (found while fixing AC-INT-02)
+- Status: enforced
+- Given a candidate who ends the interview while the live connection is down
+- When the page shows its final state
+- Then the end was reported to the API by another route, or the page says the interview was not completed
+
 ## Portfolio
 
 ### AC-PF-01 — A skill that was not assessed has no level

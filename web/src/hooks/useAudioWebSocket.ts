@@ -100,10 +100,14 @@ export function useAudioWebSocket({
             case "session_ended":
               sessionEndedRef.current = true;
               reconnectAttemptsRef.current = RECONNECT_DELAYS.length; // suppress reconnect
-              onStateChange("complete");
+              // "error" is the server saying it could not keep the interview alive.
+              onStateChange(msg.reason === "error" ? "failed" : "complete");
               break;
             case "error":
-              if (!msg.recoverable) onStateChange("complete");
+              if (!msg.recoverable) {
+                sessionEndedRef.current = true; // the server closes next; nothing to reconnect to
+                onStateChange("failed");
+              }
               break;
           }
         } catch {
@@ -127,7 +131,8 @@ export function useAudioWebSocket({
           connect();
         }, RECONNECT_DELAYS[attempt]);
       } else {
-        onStateChange("complete");
+        // Out of retries. The server never said the interview ended, so it did not complete.
+        onStateChange("failed");
       }
     };
   }, [sessionId, token, onAudioChunk, onTranscript, onStateChange, onSpeakerChange]);
@@ -138,21 +143,25 @@ export function useAudioWebSocket({
     }
   }, []);
 
-  const sendJson = useCallback((payload: object) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(payload));
-    }
+  // Returns whether the message left: a closed socket drops it, and the caller
+  // must not assume the server heard.
+  const sendJson = useCallback((payload: object): boolean => {
+    if (wsRef.current?.readyState !== WebSocket.OPEN) return false;
+    wsRef.current.send(JSON.stringify(payload));
+    return true;
   }, []);
 
   const disconnect = useCallback(() => {
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     reconnectAttemptsRef.current = RECONNECT_DELAYS.length; // prevent reconnect
+    sessionEndedRef.current = true; // closing on purpose is not a lost connection
     wsRef.current?.close();
   }, []);
 
   useEffect(() => {
     return () => {
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      sessionEndedRef.current = true;
       wsRef.current?.close();
     };
   }, []);

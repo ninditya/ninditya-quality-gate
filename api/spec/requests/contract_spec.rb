@@ -20,6 +20,15 @@ RSpec.describe 'API contracts the web app depends on', type: :request do
     expect(shape_diff(contract('session_created'), json)).to eq([])
   end
 
+  it 'GET /sessions/:token/candidate matches contracts/candidate_info.json [AC-API-02]' do
+    failed = create(:session, :ended, assessment: assessment, end_reason: 'error')
+
+    get "/api/v1/sessions/#{failed.invite_token}/candidate"
+
+    expect(response).to have_http_status(:ok)
+    expect(shape_diff(contract('candidate_info'), json)).to eq([])
+  end
+
   it 'GET /sessions/:id/portfolio matches contracts/portfolio.json [AC-API-02]' do
     rated = create(:portfolio_skill, portfolio: portfolio, skill_id: 'sk-eng-001')
     AssessorOverride.create!(portfolio_skill: rated, ai_level: 3, override_level: 4,

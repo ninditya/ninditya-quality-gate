@@ -280,10 +280,11 @@
         "AC-INT-01",
         "AC-INT-02"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "None.",
-      "evidence": "web/src/pages/interview/InterviewPage.test.tsx; web/src/hooks/useAudioWebSocket.test.ts"
+      "evidence": "web/src/pages/interview/InterviewPage.test.tsx; web/src/hooks/useAudioWebSocket.test.ts",
+      "fix": "The page has a 'failed' state: a bad link, a failed load, an error end and exhausted reconnects each say what happened and what to do; 'Interview Complete' follows only a session the server ended normally."
     },
     {
       "id": "R-20",
@@ -524,6 +525,21 @@
       "owner": "Product owner (to be named at G2 sign-off)",
       "mitigation": "None. Needs a product and legal decision before client data is processed.",
       "evidence": "No document covers these; the code is the only statement of intent."
+    },
+    {
+      "id": "R-38",
+      "severity": "P1",
+      "class": "built-wrong",
+      "title": "Ending the interview while the connection is down shows 'Interview Complete' although the server was never told",
+      "impact": "Candidates and assessors: the candidate sees a completed interview; the stored session stays active and is ended as failed two minutes later.",
+      "acs": [
+        "AC-INT-03"
+      ],
+      "status": "fixed",
+      "owner": "Ninditya (quality owner)",
+      "mitigation": "None.",
+      "evidence": "web/src/pages/interview/InterviewPage.test.tsx; found while fixing R-19",
+      "fix": "The end is reported over HTTP when the socket is down; if that fails too, the page reports the interview was not completed."
     }
   ]
 }

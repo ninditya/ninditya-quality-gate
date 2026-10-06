@@ -154,7 +154,9 @@ module Api
           session_id:      session.id,
           role_title:      assessment.name,
           time_limit_min:  assessment.time_limit_min,
-          session_status:  session.status
+          session_status:  session.status,
+          # Lets the candidate's page tell a finished interview from a failed one.
+          end_reason:      session.end_reason
         )
       end
 

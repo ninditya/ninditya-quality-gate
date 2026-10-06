@@ -29,6 +29,7 @@ export default function InterviewPage() {
   const [candidateInfo, setCandidateInfo] = useState<CandidateInfo | null>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [interviewState, setInterviewState] = useState<InterviewState>("idle");
+  const [loadError, setLoadError] = useState<"invalid_link" | "unreachable" | null>(null);
   const [speaker, setSpeaker] = useState<InterviewSpeaker>(null);
   const [transcript, setTranscript] = useState<Pick<TranscriptTurn, "speaker" | "text">[]>([]);
   const [hardwareCheckDone, setHardwareCheckDone] = useState(false); // kept for green banner
@@ -46,9 +47,13 @@ export default function InterviewPage() {
       .then((res) => {
         setCandidateInfo(res.data);
         setSessionId(res.data.session_id);
-        if (res.data.session_status === "ended") setInterviewState("complete");
+        if (res.data.session_status === "ended") {
+          setInterviewState(res.data.end_reason === "error" ? "failed" : "complete");
+        }
       })
-      .catch(() => setInterviewState("complete"));
+      // Nothing was loaded, so nothing is known about the interview. In particular
+      // it is not "complete".
+      .catch((e) => setLoadError(e?.response?.status === 404 ? "invalid_link" : "unreachable"));
   }, [token]);
 
   const muteRef = useRef<(() => void) | null>(null);
@@ -177,10 +182,20 @@ export default function InterviewPage() {
     if (reconnectedPromptTimerRef.current) clearTimeout(reconnectedPromptTimerRef.current);
     stopCapture();
     stopPlayback();
-    sendJson({ type: "end_session" });
+    // "Complete" is shown only once the server has been told. With the socket
+    // down the message is dropped, so the end is reported over HTTP instead.
+    let recorded = sendJson({ type: "end_session" });
     disconnect();
-    setInterviewState("complete");
-  }, [stopCapture, stopPlayback, sendJson, disconnect]);
+    if (!recorded && token) {
+      try {
+        await sessionsApi.audioComplete(token);
+        recorded = true;
+      } catch {
+        recorded = false;
+      }
+    }
+    setInterviewState(recorded ? "complete" : "failed");
+  }, [stopCapture, stopPlayback, sendJson, disconnect, token]);
 
   const wsConnectionStatus =
     interviewState === "reconnecting"
@@ -188,6 +203,38 @@ export default function InterviewPage() {
       : connectionState === "connected"
       ? "connected"
       : "reconnecting";
+
+  // ── Could not load: the link is wrong, or the service did not answer ─────
+  if (loadError) {
+    return (
+      <div role="alert" className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+        <div className="text-4xl">⚠️</div>
+        <h2 className="text-xl font-semibold">
+          {loadError === "invalid_link" ? "This interview link is not valid" : "We could not load your interview"}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {loadError === "invalid_link"
+            ? "Check that you opened the full link from your invitation, or ask the person who invited you for a new one."
+            : "Your interview has not started. Check your connection and reload this page. If it keeps happening, contact the person who invited you."}
+        </p>
+      </div>
+    );
+  }
+
+  // ── Stopped without completing ──────────────────────────────────────────
+  if (interviewState === "failed") {
+    return (
+      <div role="alert" className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+        <div className="text-4xl">⚠️</div>
+        <h2 className="text-xl font-semibold">Interview interrupted</h2>
+        <p className="text-sm text-muted-foreground">
+          The interview stopped because of a technical problem and was not completed.
+          <br />
+          Please contact the person who invited you to arrange how to continue.
+        </p>
+      </div>
+    );
+  }
 
   // ── State A: Pre-start ──────────────────────────────────────────────────
   if (interviewState === "idle") {
