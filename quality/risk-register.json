@@ -25,10 +25,11 @@
       "acs": [
         "AC-INV-01"
       ],
-      "status": "open",
+      "status": "fixed",
       "owner": "Ninditya (quality owner)",
       "mitigation": "A developer can hand-edit the host in each link. An assessor cannot know to.",
-      "evidence": "api/spec/requests/session_lifecycle_spec.rb"
+      "evidence": "api/spec/requests/session_lifecycle_spec.rb",
+      "fix": "Invite links are built from WEB_BASE_URL; production refuses to boot without it."
     },
     {
       "id": "R-03",
