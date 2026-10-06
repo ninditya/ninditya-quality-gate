@@ -202,6 +202,15 @@ Format: `### <id> — <title>`, then `Source`, `Status`, and Given/When/Then.
 - When the page shows its final state
 - Then the end was reported to the API by another route, or the page says the interview was not completed
 
+## Coverage
+
+### AC-COV-01 — A skill is covered only when the analyzer judged the evidence sufficient
+- Source: PRD-01 §4 ("partial → covered: … you judge there is enough behavioral evidence to confidently assign an L1-L5 level")
+- Status: enforced
+- Given a skill that is partial, however many times it was probed
+- When the conversation moves on and the analyzer no longer reports on it
+- Then it stays partial until the analyzer itself marks it covered
+
 ## Transcript
 
 ### AC-TR-01 — A transcript with a missing turn says so

@@ -489,15 +489,19 @@
     },
     {
       "id": "R-34",
-      "severity": "P2",
-      "class": "missing-spec",
+      "severity": "P1",
+      "class": "built-wrong",
       "title": "A skill is promoted to 'covered' on probe count alone, which PRD-01 section 4 does not allow",
       "impact": "Hiring managers: 'covered' and therefore HIGH confidence can be reached without the evidence test.",
-      "acs": [],
-      "status": "open",
+      "acs": [
+        "AC-COV-01"
+      ],
+      "status": "fixed",
       "owner": "Product owner (to be named at G2 sign-off)",
       "mitigation": "Promotion needs at least four exchanges on the skill.",
-      "evidence": "By reading api/app/workers/coverage_analyzer_worker.rb (advance_stale_partials)."
+      "evidence": "api/spec/workers/coverage_analyzer_worker_spec.rb",
+      "rerated": "P2 -> P1 on re-reading the severity scale: a coverage state the analyzer never gave is wrong data, and it decides the end of the interview and the confidence on the rating. Class corrected too: PRD-01 section 4 states the rule, so this was built wrong, not unspecified.",
+      "fix": "The worker no longer promotes a skill on probe count. A skill is covered only when the analyzer says so; otherwise it stays partial, its confidence is medium, and the interview ends on time rather than as 'all covered'."
     },
     {
       "id": "R-35",
