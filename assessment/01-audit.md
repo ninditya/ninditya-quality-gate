@@ -354,6 +354,13 @@ There was no channel for questions, so these are the calls I made.
    behaviour change nobody specified. The gate's denylist therefore holds the
    company's name and the client's. If the product has a brand name beyond
    that phrase, I did not find it in the source.
+10. **The net's own code lives at the repository root.** The brief says code
+    changes go in `api/` or `web/`. Every change to the platform does: fixes,
+    migrations and tests are inside the two services. What belongs to neither
+    sits beside them: the gates (`quality/`), the fixtures both suites read
+    (`contracts/`), the acceptance criteria (`docs/specs/`), and the CI
+    workflows, which GitHub only reads from `.github/`. Putting cross-service
+    tooling inside one service would have made the other depend on it.
 
 ## What I did not look at
 
